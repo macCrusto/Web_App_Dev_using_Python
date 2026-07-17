@@ -1,0 +1,75 @@
+object oriented concepts
+
+alllows you to execute concurrentlu
+
+python is used for database management, backend development, ai/ml learning, api development
+
+nginx, conicon
+
+app server (flask, django, fastapi)
+
+database
+
+api layer (graphql, restapi)
+
+cloud (aws, azure, ...)
+
+advantages...
+
+
+Starting a server
+install flask and create an application
+
+
+cgi stands for common gateway interface
+can be replaced by frameworks by flask and django
+
+
+script processes and returns an http response
+
+Web2Py - a gui used for python applications
+
+xml - extensible markup language
+allows users to create their own tag
+
+xml focuses on data while html focuses on preseentation
+
+
+Javascript task queue
+tasks that need to be executed after one code has finished
+javascript is single-threaded
+async programming - timeout, api,'
+
+ssg is a tool tnat generates
+e.g., ugo, nextjs, eleventea
+good for seo
+less suitable for dynamic operations, updating content requires rebuilding the site
+
+steps in launching Web2Py
+web2py is 
+included a built in webserver, admin space, and integrated development
+
+
+
+
+---------------------------------------------------------------------------------------------------
+PYTHON WEB frameworks 
+
+
+
+------
+
+@app.route("/")
+def home():
+    return "Hello Flask!"
+
+@app.route("/about")
+def about():
+    return "This is the about page."
+
+@app.route("/contact")
+def contact():
+    return "This is the contact page."
+
+
+-------
