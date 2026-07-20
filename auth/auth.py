@@ -2,6 +2,7 @@ from flask import Blueprint, request, jsonify
 from email_validator import validate_email, EmailNotValidError
 from extension import bcrypt
 from db import get_connection
+import secrets
 
 auth_bp = Blueprint("auth", __name__)
 
@@ -12,6 +13,7 @@ def register():
     fullname = data.get("fullname")
     email = data.get("email")
     password = data.get("password")
+    role = data.get("role")
 
     if not fullname or not email or not password:
         return jsonify({"error": "Missing required fields"}), 400
@@ -20,6 +22,9 @@ def register():
         validate_email(email)
     except EmailNotValidError as e:
         return jsonify({"success": False, "message": str(e)}), 400
+
+    conn = None
+    cursor = None
 
     try:
         conn = get_connection()
@@ -47,9 +52,7 @@ def register():
         return jsonify({"error": "Password must be at least 6 characters long"}), 400
 
     hashed_password = bcrypt.generate_password_hash(password).decode("utf-8")
-
-    conn = None
-    cursor = None
+    verification_token = secrets.token_urlsafe(32)
 
     try:
         conn = get_connection()
@@ -61,6 +64,9 @@ def register():
         )
 
         conn.commit()
+
+        verification_link = (f"http://localhost:5000/api/auth/verify-email/{verification_token}")
+        send_verification_email(email, fullname, verification_link)
 
         return jsonify({
             "success": True, 
@@ -74,10 +80,8 @@ def register():
         }), 500
     
     finally:
-        if cursor:
-            cursor.close()
-        if conn: 
-            conn.close()
+        cursor.close()
+        conn.close()
 
     # print(data)
     # return jsonify({"success": "User registered successfully"}), 201
