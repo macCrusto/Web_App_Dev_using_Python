@@ -9,9 +9,10 @@ class Config:
     MYSQL_USER = os.getenv("MYSQL_USER")
     MYSQL_PASSWORD = os.getenv("MYSQL_PASSWORD")
     MYSQL_DATABASE = os.getenv("MYSQL_DATABASE")
+    # SSL = {"ca", os.getenv("DB_SSL_CERT")}
     MAIL_SERVER = os.getenv("MAIL_SERVER")
-    MAIL_PORT = os.getenv("MAIL_PORT")
-    MAIL_USE_TLS = os.getenv("MAIL_USE_TLS")
+    MAIL_PORT = int(os.getenv("MAIL_PORT"))
+    MAIL_USE_TLS = bool(os.getenv("MAIL_USE_TLS"))
     MAIL_USERNAME = os.getenv("MAIL_USERNAME")
     MAIL_PASSWORD = os.getenv("MAIL_PASSWORD")
     MAIL_DEFAULT_SENDER = os.getenv("MAIL_DEFAULT_SENDER")

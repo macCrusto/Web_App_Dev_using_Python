@@ -1,8 +1,12 @@
 .env
 venv/
 .venv/
+
 tempCodeRunnerFile.py
+
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
+
+certificates/

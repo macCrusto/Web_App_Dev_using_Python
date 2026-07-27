@@ -1,9 +1,11 @@
 from flask import Flask, render_template #type: ignore
+from flask_cors import CORS
 from extension import bcrypt, mail
 from auth.auth import auth_bp
 from config import Config
 
 app = Flask(__name__)
+CORS(app, origins=["http://localhost:5173"], supports_credentials=True)
 app.config.from_object(Config)
 
 bcrypt.init_app(app)
@@ -19,4 +21,4 @@ app.register_blueprint(auth_bp, url_prefix="/api/auth")
 
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(host="localhost", port=5000, debug=True)

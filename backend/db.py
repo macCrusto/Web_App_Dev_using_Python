@@ -7,6 +7,11 @@ def get_connection():
         user = Config.MYSQL_USER,
         password = Config.MYSQL_PASSWORD,
         database = Config.MYSQL_DATABASE,
-        port = Config.MYSQL_PORT
+        port = Config.MYSQL_PORT,
+        cursorclass = pymysql.cursors.DictCursor
+        # ssl = Config.SSL
     )
     return connection
+
+# print("Database connection established successfully.")
+# print(get_connection())
