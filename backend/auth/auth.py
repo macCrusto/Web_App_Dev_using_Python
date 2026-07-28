@@ -17,10 +17,13 @@ def register():
     password = data.get("password")
     role = data.get("role", "USER").upper()
 
-    if role not in ["USER", "INSTRUCTOR"]:
+    if role not in ["USER", "ADMIN"]:
         return jsonify({"success": False, "message": "Invalid role"}), 400
 
-    if not fullname or not email or not password or not role:
+    if not role:
+        role = "USER"
+
+    if not fullname or not email or not password:
         return jsonify({"success": False, "message": "All fields are required"}), 400
     
     try:
@@ -63,7 +66,7 @@ def register():
         conn.commit()
         cursor.close()
 
-        verification_link = (f"https://flask-auth-endpoint.onrender.com/api/auth/verify-email/{verification_token}")
+        verification_link = (f"https://localhost:5173/api/auth/verify-email/{verification_token}")
         send_verification_email(email, fullname, verification_link)
         return jsonify({
             "success": True,

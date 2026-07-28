@@ -12,3 +12,4 @@ __pycache__/
 certificates/
 
 routes.py
+email_test.py
