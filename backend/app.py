@@ -5,7 +5,7 @@ from auth.auth import auth_bp
 from config import Config
 
 app = Flask(__name__)
-CORS(app, origins=["http://localhost:5173"], supports_credentials=True)
+CORS(app, origins=[Config.FRONTEND_URL], supports_credentials=True)
 app.config.from_object(Config)
 
 bcrypt.init_app(app)

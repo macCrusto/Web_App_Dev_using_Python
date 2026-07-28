@@ -5,6 +5,7 @@ load_dotenv()
 class Config:
     SECRET_KEY = os.getenv("MY_SECRET_KEY")
     MYSQL_HOST = os.getenv("MYSQL_HOST")
+    FRONTEND_URL = os.getenv("FRONTEND_URL")
     MYSQL_PORT = int(os.getenv("MYSQL_PORT"))
     MYSQL_USER = os.getenv("MYSQL_USER")
     MYSQL_PASSWORD = os.getenv("MYSQL_PASSWORD")
@@ -12,8 +13,8 @@ class Config:
     # SSL = {"ca", os.getenv("DB_SSL_CERT")}
     MAIL_SERVER = os.getenv("MAIL_SERVER")
     MAIL_PORT = int(os.getenv("MAIL_PORT"))
-    MAIL_USE_TLS = bool(os.getenv("MAIL_USE_TLS"))
-    MAIL_USE_SSL = bool(os.getenv("MAIL_USE_SSL"))
+    MAIL_USE_TLS = os.getenv("MAIL_USE_TLS", False)
+    MAIL_USE_SSL = os.getenv("MAIL_USE_SSL", False)
     MAIL_USERNAME = os.getenv("MAIL_USERNAME")
     MAIL_PASSWORD = os.getenv("MAIL_PASSWORD")
     MAIL_DEFAULT_SENDER = os.getenv("MAIL_DEFAULT_SENDER")

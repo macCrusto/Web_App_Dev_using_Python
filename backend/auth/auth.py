@@ -1,9 +1,10 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, current_app, redirect
 from flask_jwt_extended import create_access_token
 from email_validator import validate_email, EmailNotValidError
 from email_service import send_verification_email
 from extension import bcrypt
 from db import get_connection
+from config import Config
 import secrets
 
 auth_bp = Blueprint("auth", __name__)
@@ -30,6 +31,7 @@ def register():
         validate_email(email)
     except EmailNotValidError as e:
         return jsonify({"success": False, "message": str(e)}), 400
+
     conn = None
     cursor = None
     conn = get_connection()
@@ -43,7 +45,7 @@ def register():
     if cursor.fetchone():
         cursor.close()
         conn.close()
-        return jsonify({"success": False, "message": "Email already exist"}), 409
+        return jsonify({"success": False, "message": "Email already exists"}), 409
 
 
     if len(password) < 6:
@@ -63,14 +65,22 @@ def register():
             (fullname, email, hashed_password, role, verification_token),
         )
 
-        conn.commit()
-        cursor.close()
+        verification_link = (f"{Config.FRONTEND_URL}/verify-email/{verification_token}")
 
-        verification_link = (f"https://localhost:5173/api/auth/verify-email/{verification_token}")
-        send_verification_email(email, fullname, verification_link)
+        try:
+            send_verification_email(email, fullname, verification_link)
+        except Exception as e:
+            current_app.logger.error(f"Failed to send verification email: {e}")
+            return jsonify({
+                "success": True,
+                "message": "User registered, but verification email could not be sent."
+            }), 201
+
+        conn.commit()
+        
         return jsonify({
             "success": True,
-            "message": "User registered successfully."
+            "message": "User registered successfully and verification email has been sent."
         }), 201
 
     except Exception as e:
@@ -80,10 +90,8 @@ def register():
         }), 500
 
     finally:
-        if cursor:
-            cursor.close()
-        if conn:
-            conn.close()
+        cursor.close()
+        conn.close()
     # print(data)
     # return jsonify({"success": True, "message": "User registered successfully."}), 201
 
@@ -91,40 +99,47 @@ def register():
 
 @auth_bp.route("/verify-email/<token>", methods=["GET"])
 def verify_email(token):
-    cursor = None
-    # conn = None
-    cursor = get_connection().cursor()
-
-    cursor.execute(
-        "SELECT id FROM Users WHERE verification_token=%s",
-        (token),
-        )
-
-    user = cursor.fetchone()
-
-    if not user:
-        cursor.close()
+    if not token:
         return jsonify({
             "success": False,
-            "message": "Invalid verification link."
-        }), 400
-    
-    cursor.execute(
-        """
-        UPDATE Users
-        SET
-            is_verified = TRUE,
-            verification_token = NULL
-        WHERE id=%s
-        """, (user["id"],)
-    )
-    get_connection().commit()
-    cursor.close()
+            "message": "Page not found"
+        }), 404
 
-    return jsonify({
-        "success": True,
-        "message": "Email verified successfully."
-    })
+    try:
+        conn = get_connection()
+        cursor = conn.cursor()
+
+        cursor.execute(
+            "SELECT id FROM Users WHERE verification_token=%s",
+            (token),
+        )
+
+        user = cursor.fetchone()
+
+        if not user:
+            return jsonify({
+                "success": False,
+                "message": "Invalid verification link."
+            }), 400
+    
+        cursor.execute(
+            "UPDATE Users SET is_verified = TRUE, verification_token = NULL WHERE id=%s", 
+            (user["id"]),
+        )
+
+        conn.commit()
+
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "message": str(e)
+        }), 500
+
+    finally:
+        cursor.close()
+        conn.close()
+
+    return redirect(f"{Config.FRONTEND_URL}/login?verified=true", code=303)
 
 @auth_bp.route("/home", methods=["GET"])
 def home():

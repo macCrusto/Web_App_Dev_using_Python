@@ -1,4 +1,5 @@
 .env
+.env.*
 venv/
 .venv/
 
@@ -12,4 +13,3 @@ __pycache__/
 certificates/
 
 routes.py
-email_test.py
