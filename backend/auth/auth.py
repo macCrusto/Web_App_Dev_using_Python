@@ -73,8 +73,8 @@ def register():
             current_app.logger.error(f"Failed to send verification email: {e}")
             return jsonify({
                 "success": True,
-                "message": "User registered, but verification email could not be sent."
-            }), 201
+                "message": "User not registered as verification email could not be sent."
+            }), 500
 
         conn.commit()
         
@@ -92,8 +92,6 @@ def register():
     finally:
         cursor.close()
         conn.close()
-    # print(data)
-    # return jsonify({"success": True, "message": "User registered successfully."}), 201
 
 
 
