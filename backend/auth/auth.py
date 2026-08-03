@@ -67,8 +67,13 @@ def register():
 
         verification_link = (f"{Config.FRONTEND_URL}/verify-email/{verification_token}")
 
+        html = f"""<h2>Welcome to Deep Sky, {fullname}!</h2>
+        <br>
+        <p>Click the link below to verify your email:</p>
+        <p><a href='{verification_link}'>Verify Email</a></p>"""
+
         try:
-            send_verification_email(email, fullname, verification_link)
+            send_verification_email(email, "Verify Your Email", html)
         except Exception as e:
             current_app.logger.error(f"Failed to send verification email: {e}")
             return jsonify({

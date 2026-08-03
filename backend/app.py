@@ -1,6 +1,6 @@
 from flask import Flask, render_template #type: ignore
 from flask_cors import CORS
-from extension import bcrypt, mail
+from extension import bcrypt
 from auth.auth import auth_bp
 from config import Config
 
@@ -8,16 +8,12 @@ app = Flask(__name__)
 CORS(app, origins=[Config.FRONTEND_URL], supports_credentials=True)
 app.config.from_object(Config)
 
-bcrypt.init_app(app)
-app.config["MAIL_SERVER"] = Config.MAIL_SERVER
-app.config["MAIL_PORT"] = Config.MAIL_PORT
-app.config["MAIL_USE_TLS"] = Config.MAIL_USE_TLS
-app.config["MAIL_USE_SSL"] = Config.MAIL_USE_SSL
-app.config["MAIL_USERNAME"] = Config.MAIL_USERNAME
-app.config["MAIL_PASSWORD"] = Config.MAIL_PASSWORD
-app.config["MAIL_DEFAULT_SENDER"] = Config.MAIL_DEFAULT_SENDER
+app.config["BREVO_API_KEY"] = Config.BREVO_API_KEY
+app.config["MAIL_FROM"] = Config.MAIL_FROM
+app.config["MAIL_FROM_TITLE"] = Config.MAIL_FROM_TITLE
 
-mail.init_app(app)
+bcrypt.init_app(app)
+
 app.register_blueprint(auth_bp, url_prefix="/api/auth")
 
 

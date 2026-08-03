@@ -1,24 +1,25 @@
-from flask_mail import Message
-from extension import mail
-from config import Config
-
-def send_verification_email(email, fullname, verification_link):
-    msg = Message(
-        subject="Verify your email",
-        sender=Config.MAIL_DEFAULT_SENDER,
-        recipients=[email],
+# from extension import mail
+from brevo import Brevo
+from brevo.transactional_emails import (
+    SendTransacEmailRequestSender, 
+    SendTransacEmailRequestToItem
     )
-    msg.body = f"""
-    Hello {fullname},
+from flask import current_app
 
-    Thanks for signing up to our service. Please click on the link below to verify your email.
-
-    {verification_link}
-
-    If you didn't register, please ignore this email.
-
-    Regards,
-    The Team
-    """
-
-    mail.send(msg)
+def send_verification_email(email, subject, html):
+    client = Brevo(
+        api_key=current_app.config["BREVO_API_KEY"]
+    )
+    
+    client.transactional_emails.send_transac_email(
+        subject=subject,
+        html_content=html,
+        sender=SendTransacEmailRequestSender(
+            name=current_app.config["MAIL_FROM_TITLE"],
+            email=current_app.config["MAIL_FROM"],
+        ),
+        to=[
+            SendTransacEmailRequestToItem(
+                email=email,
+            )
+        ],)
