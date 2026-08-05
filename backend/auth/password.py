@@ -91,7 +91,8 @@ def reset_password(token):
     try:
         # 1. Decode and validate the JWT token
         decoded = decode_token(token)
-        user_id = decoded.get("sub")  # the identity we stored as string
+        user_id = decoded.get("sub")    # the identity we stored as string
+        token_iat = decoded.get("iat") # iat stands for 'issued at'
 
         if not user_id:
             return jsonify({
@@ -100,25 +101,43 @@ def reset_password(token):
             }), 400
 
         if decoded.get("action") != "password_reset":
-            return jsonify(message="Invalid token type"), 400
-            
-        # 2. Look up the user
+            return jsonify({
+                "success": False,
+                "message": "Invalid token type."
+            }), 400
+
+        # 2. Fetch user and their last password change timestamp
         conn = get_connection()
         cursor = conn.cursor()
 
-        cursor.execute("SELECT id FROM Users WHERE id = %s", (user_id,))
+        cursor.execute( 
+            "SELECT id, last_password_change FROM Users WHERE id = %s",
+            (user_id,)
+        )
+
         user = cursor.fetchone()
-
         if not user:
-            return jsonify({
-                "success": False,
-                "message": "User not found."
-            }), 404
+            return jsonify({"success": False, "message": "User not found."}), 404
 
-        # 3. Hash and update the password
+        user_id = user["id"]
+        last_change = user["last_password_change"]   # may be None
+
+        # 3. Check TIMESTAMP for outdated tokens
+        if last_change is not None and token_iat is not None:
+            # Convert last_change (datetime) to Unix timestamp
+            # Assuming last_change is a Python datetime object
+            if last_change.timestamp() > token_iat:
+                return jsonify({
+                    "success": False,
+                    "message": "This reset link has already been used or is no longer valid."
+                }), 400
+
+        # 4. Hash the password
         hashed = bcrypt.generate_password_hash(new_password).decode("utf-8")
+
+        # 5. Update the password and last_password_change in one transaction
         cursor.execute(
-            "UPDATE Users SET password = %s WHERE id = %s",
+            "UPDATE Users SET password = %s, last_password_change = CURRENT_TIMESTAMP WHERE id = %s",
             (hashed, user_id)
         )
         conn.commit()
@@ -129,7 +148,7 @@ def reset_password(token):
         }), 200
 
     except Exception as e:
-        # This catches expired tokens, invalid signatures, etc.
+        # Catches expired tokens, invalid signatures, etc.
         return jsonify({
             "success": False,
             "message": "Invalid or expired reset link."
