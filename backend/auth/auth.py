@@ -108,13 +108,16 @@ def verify_email(token):
             "message": "Page not found"
         }), 404
 
+    conn = None
+    cursor = None
+
     try:
         conn = get_connection()
         cursor = conn.cursor()
 
         cursor.execute(
             "SELECT id FROM Users WHERE verification_token=%s",
-            (token),
+            (token,)
         )
 
         user = cursor.fetchone()
@@ -127,7 +130,7 @@ def verify_email(token):
     
         cursor.execute(
             "UPDATE Users SET is_verified = TRUE, verification_token = NULL WHERE id=%s", 
-            (user["id"]),
+            (user["id"],)
         )
 
         conn.commit()
@@ -168,6 +171,9 @@ def login():
             "message": "Email and password are required."
         }), 400
 
+    conn = None
+    cursor = None
+
     try:
         conn = get_connection()
         cursor = conn.cursor()
@@ -179,7 +185,7 @@ def login():
                    password,
                    role,
                    is_verified
-            FROM users
+            FROM Users
             WHERE email=%s
         """, (email,))
 
@@ -239,6 +245,9 @@ def forgot_password():
             "message": "Email is required"
         }), 400
 
+    conn = None
+    cursor = None
+    
     try:
         conn = get_connection()
         cursor = conn.cursor()
@@ -267,11 +276,7 @@ def forgot_password():
         <p> Go <a href="{reset_link}">here</a> to reset your password. </p>
         """
 
-        send_verification_email(
-            to=user["email"],
-            subject="Password Reset",
-            html=html
-        )
+        send_verification_email(user["email"], "Password Reset", html)
 
         return jsonify({
             "success": True,
