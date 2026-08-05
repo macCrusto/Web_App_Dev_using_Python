@@ -2,6 +2,7 @@ from flask import Blueprint, request, jsonify, current_app, redirect
 from flask_jwt_extended import create_access_token
 from email_validator import validate_email, EmailNotValidError
 from email_service import send_verification_email
+from datetime import timedelta
 from extension import bcrypt
 from db import get_connection
 from config import Config
@@ -68,7 +69,6 @@ def register():
         verification_link = (f"{Config.FRONTEND_URL}/verify-email/{verification_token}")
 
         html = f"""<h2>Welcome to Deep Sky, {fullname}!</h2>
-        <br>
         <p>Click the link below to verify your email:</p>
         <p><a href='{verification_link}'>Verify Email</a></p>"""
 
@@ -222,6 +222,67 @@ def login():
                 "role": user["role"]
             }
         }), 200
+
+    finally:
+        cursor.close()
+        conn.close()
+
+
+@auth_bp.route("/forgot-password", methods=["POST"])
+def forgot_password():
+    data = request.get_json()
+    email = data.get('email')
+
+    if not email:
+        return jsonify({
+            "success": False,
+            "message": "Email is required"
+        }), 400
+
+    try:
+        conn = get_connection()
+        cursor = conn.cursor()
+
+        cursor.execute("""
+            SELECT id, fullname, email
+            FROM Users
+            WHERE email=%s
+        """, (email,))
+
+        user = cursor.fetchone()
+        if not user:
+            return jsonify({
+                "success": False,
+                "message": "Email not found"
+            }), 404
+
+        # Generate a password reset token
+        reset_token = create_access_token(identity=str(user["id"]), expires_delta=timedelta(minutes=30))
+
+        # Send the reset link via email
+        reset_link = f"{Config.FRONTEND_URL}/api/auth/reset-password/{reset_token}"
+
+        html = f"""
+        <p>Hi {user["fullname"]},</p>
+        <p> Go <a href="{reset_link}">here</a> to reset your password. </p>
+        """
+
+        send_verification_email(
+            to=user["email"],
+            subject="Password Reset",
+            html=html
+        )
+
+        return jsonify({
+            "success": True,
+            "message": "Password reset link sent to your email."
+        }), 200
+
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "message": str(e)
+        }), 500
 
     finally:
         cursor.close()
