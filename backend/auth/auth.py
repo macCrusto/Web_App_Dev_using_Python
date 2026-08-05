@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify, current_app, redirect
-from flask_jwt_extended import create_access_token
+from flask_jwt_extended import create_access_token, decode_token
 from email_validator import validate_email, EmailNotValidError
 from email_service import send_verification_email
 from datetime import timedelta
@@ -234,10 +234,13 @@ def login():
         conn.close()
 
 
+
 @auth_bp.route("/forgot-password", methods=["POST"])
 def forgot_password():
     data = request.get_json()
     email = data.get('email')
+
+    reset_claims = {"action": "password_reset"}
 
     if not email:
         return jsonify({
@@ -247,7 +250,7 @@ def forgot_password():
 
     conn = None
     cursor = None
-    
+
     try:
         conn = get_connection()
         cursor = conn.cursor()
@@ -266,7 +269,11 @@ def forgot_password():
             }), 404
 
         # Generate a password reset token
-        reset_token = create_access_token(identity=str(user["id"]), expires_delta=timedelta(minutes=30))
+        reset_token = create_access_token(
+            identity=str(user["id"]),
+            additional_claims=reset_claims,
+            expires_delta=timedelta(minutes=30)
+        )
 
         # Send the reset link via email
         reset_link = f"{Config.FRONTEND_URL}/api/auth/reset-password/{reset_token}"
@@ -292,3 +299,72 @@ def forgot_password():
     finally:
         cursor.close()
         conn.close()
+
+
+
+@auth_bp.route("/reset-password/<token>", methods=["POST"])
+def reset_password(token):
+    data = request.get_json()
+    new_password = data.get("password")
+
+    if not new_password or len(new_password) < 6:
+        return jsonify({
+            "success": False,
+            "message": "Password must be at least 6 characters long."
+        }), 400
+
+    conn = None
+    cursor = None
+
+    try:
+        # 1. Decode and validate the JWT token
+        decoded = decode_token(token)
+        user_id = decoded.get("sub")  # the identity we stored as string
+
+        if not user_id:
+            return jsonify({
+                "success": False,
+                "message": "Invalid token payload."
+            }), 400
+
+        if decoded.get("action") != "password_reset":
+            return jsonify(message="Invalid token type"), 400
+            
+        # 2. Look up the user
+        conn = get_connection()
+        cursor = conn.cursor()
+
+        cursor.execute("SELECT id FROM Users WHERE id = %s", (user_id,))
+        user = cursor.fetchone()
+
+        if not user:
+            return jsonify({
+                "success": False,
+                "message": "User not found."
+            }), 404
+
+        # 3. Hash and update the password
+        hashed = bcrypt.generate_password_hash(new_password).decode("utf-8")
+        cursor.execute(
+            "UPDATE Users SET password = %s WHERE id = %s",
+            (hashed, user_id)
+        )
+        conn.commit()
+
+        return jsonify({
+            "success": True,
+            "message": "Password has been reset successfully."
+        }), 200
+
+    except Exception as e:
+        # This catches expired tokens, invalid signatures, etc.
+        return jsonify({
+            "success": False,
+            "message": "Invalid or expired reset link."
+        }), 400
+
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
