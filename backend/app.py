@@ -1,7 +1,7 @@
-from flask import Flask, render_template #type: ignore
+from flask import Flask #type: ignore
 from flask_cors import CORS
 from extension import bcrypt, jwt
-from auth.auth import auth_bp
+from auth import auth_bp
 from config import Config
 
 app = Flask(__name__)
