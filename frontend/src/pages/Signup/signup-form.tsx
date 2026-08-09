@@ -1,6 +1,3 @@
-import * as React from "react"
-import { useState } from "react"
-import { useNavigate } from "react-router-dom"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import {
@@ -18,64 +15,15 @@ import {
 } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 
+import type { AuthFormProps } from "@/lib/auth"
+
 export function SignupForm({
   className,
+  onSubmit,
+  error,
+  isLoading,
   ...props
-}: React.ComponentProps<"div">) {
-  const navigate = useNavigate()
-  const [error, setError] = useState<string | null>(null)
-  const [isLoading, setIsLoading] = useState(false)
-
-  const handleSubmit = async (e: React.SubmitEvent<HTMLFormElement>) => {
-    e.preventDefault()
-    setIsLoading(true)
-    setError(null)
-
-    const formData = new FormData(e.currentTarget)
-    const fullname = formData.get("name") as string
-    const email = formData.get("email") as string
-    const password = formData.get("password") as string
-    const confirmPassword = formData.get("confirm-password") as string
-
-    if (password !== confirmPassword) {
-      setError("Passwords do not match")
-      setIsLoading(false)
-      return
-    }
-
-    console.log(JSON.stringify({ fullname, email, password }))
-
-    try {
-      const response = await fetch("/api/auth/register", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ fullname, email, password }),
-      })
-
-      if (!response.ok) {
-        let errorMessage = "Failed to sign up"
-        try {
-          const errorData = await response.json()
-          errorMessage = errorData.message || errorData.error || errorMessage
-        } catch {
-          if (response.status === 409) {
-            errorMessage = "An account with this email already exists."
-          }
-        }
-        throw new Error(errorMessage)
-      }
-
-      // Redirect user to the sign in page on success
-      navigate("/signin")
-    } catch (err: any) {
-      setError(err.message || "Something went wrong")
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
+}: AuthFormProps) {
   return (
     <div className={cn("w-sm flex flex-col", className)} {...props}>
       <Card>
@@ -86,7 +34,7 @@ export function SignupForm({
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit}>
+          <form onSubmit={onSubmit}>
             <FieldGroup>
               <Field>
                 <FieldLabel htmlFor="name">Full Name</FieldLabel>

@@ -1,6 +1,9 @@
-import { SignupForm } from "@/components/signup-form"
+import { SignupForm } from "./signup-form"
+import { useSignup } from "./useSignup"
 
 export default function SignupPage() {
+  const { handleSubmit, error, isLoading } = useSignup()
+
   return (
     <div className="flex min-h-screen w-full flex-col items-center justify-center dark:bg-zinc-950">
       <div className="w-full max-w-md flex flex-col items-center justify-center gap-4 scale-85">
@@ -8,7 +11,12 @@ export default function SignupPage() {
           <img src="src/assets/logo.svg" className="size-8" />
           Petur
         </a>
-        <SignupForm className="w-sm" />
+        <SignupForm 
+          className="w-sm"
+          onSubmit={handleSubmit}
+          error={error}
+          isLoading={isLoading}
+        />
       </div>
     </div>
   )
