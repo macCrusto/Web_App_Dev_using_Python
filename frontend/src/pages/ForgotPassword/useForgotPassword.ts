@@ -1,10 +1,8 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { registerUser } from "./registerUser";
+import { forgotPassword } from "./forgotPassword";
 import { toast } from "sonner";
 
-export function useSignup() {
-  const navigate = useNavigate();
+export function useForgotPassword() {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -14,22 +12,13 @@ export function useSignup() {
     setError(null);
 
     const formData = new FormData(e.currentTarget);
-    const fullname = formData.get("name") as string;
     const email = formData.get("email") as string;
-    const password = formData.get("password") as string;
-    const confirmPassword = formData.get("confirm-password") as string;
-
-    if (password !== confirmPassword) {
-      setError("Passwords do not match");
-      toast.error("Passwords do not match");
-      setIsLoading(false);
-      return;
-    }
 
     try {
-      await registerUser({ fullname, email, password });
-      toast.success("Signup successful! Please log in.");
-      navigate("/login");
+      await forgotPassword(email);
+      toast.success("Password reset link sent to your email.");
+      // Optionally reset the form
+      (e.target as HTMLFormElement).reset();
     } catch (err: unknown) {
       if (err instanceof Error) {
         setError(err.message);

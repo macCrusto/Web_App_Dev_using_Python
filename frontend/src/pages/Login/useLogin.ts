@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { loginUser } from "./loginApi";
+import { loginUser } from "./loginUser";
 import { toast } from "sonner";
 
 export function useLogin() {
@@ -21,7 +21,10 @@ export function useLogin() {
       const response = await loginUser({ email, password });
       const data = await response.json();
       
-      // Usually you'd store the token here, e.g. localStorage.setItem("token", data.access_token)
+      if (data.access_token) {
+        localStorage.setItem("access_token", data.access_token);
+      }
+
       toast.success("Login successful!");
       navigate("/dashboard");
     } catch (err: unknown) {

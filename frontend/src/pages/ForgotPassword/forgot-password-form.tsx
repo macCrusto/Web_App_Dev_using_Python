@@ -9,14 +9,14 @@ import {
 } from "@/components/ui/card"
 import {
   Field,
-  FieldDescription,
   FieldGroup,
   FieldLabel,
 } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import type { AuthFormProps } from "@/lib/auth"
+import { Link } from "react-router-dom"
 
-export function LoginForm({
+export function ForgotPasswordForm({
   className,
   onSubmit,
   error,
@@ -27,9 +27,9 @@ export function LoginForm({
     <div className={cn("flex flex-col gap-6", className)} {...props}>
       <Card>
         <CardHeader>
-          <CardTitle>Login to your account</CardTitle>
+          <CardTitle>Forgot Password</CardTitle>
           <CardDescription>
-            Enter your email below to login to your account
+            Enter your email address and we'll send you a link to reset your password.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -45,18 +45,6 @@ export function LoginForm({
                   required
                 />
               </Field>
-              <Field>
-                <div className="flex items-center">
-                  <FieldLabel htmlFor="password">Password</FieldLabel>
-                  <a
-                    href="/forgot-password"
-                    className="ml-auto inline-block text-sm underline-offset-4 hover:underline"
-                  >
-                    Forgot your password?
-                  </a>
-                </div>
-                <Input id="password" name="password" type="password" required />
-              </Field>
               {error && (
                 <p className="text-sm font-medium text-destructive text-center">
                   {error}
@@ -64,14 +52,11 @@ export function LoginForm({
               )}
               <Field>
                 <Button type="submit" disabled={isLoading}>
-                  {isLoading ? "Logging in..." : "Login"}
+                  {isLoading ? "Sending..." : "Send Reset Link"}
                 </Button>
-                <Button variant="outline" type="button" disabled={isLoading}>
-                  Login with Google
-                </Button>
-                <FieldDescription className="text-center">
-                  Don&apos;t have an account? <a href="/">Sign up</a>
-                </FieldDescription>
+                <div className="text-center text-sm">
+                  Remember your password? <Link to="/login" className="underline hover:text-primary">Login</Link>
+                </div>
               </Field>
             </FieldGroup>
           </form>

@@ -1,9 +1,10 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { registerUser } from "./registerUser";
+import { useNavigate, useParams } from "react-router-dom";
+import { resetPassword } from "./resetPassword";
 import { toast } from "sonner";
 
-export function useSignup() {
+export function useResetPassword() {
+  const { token } = useParams<{ token: string }>();
   const navigate = useNavigate();
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -14,8 +15,6 @@ export function useSignup() {
     setError(null);
 
     const formData = new FormData(e.currentTarget);
-    const fullname = formData.get("name") as string;
-    const email = formData.get("email") as string;
     const password = formData.get("password") as string;
     const confirmPassword = formData.get("confirm-password") as string;
 
@@ -26,9 +25,16 @@ export function useSignup() {
       return;
     }
 
+    if (!token) {
+      setError("Invalid reset token");
+      toast.error("Invalid reset token");
+      setIsLoading(false);
+      return;
+    }
+
     try {
-      await registerUser({ fullname, email, password });
-      toast.success("Signup successful! Please log in.");
+      await resetPassword(password, token);
+      toast.success("Password has been reset successfully. Please log in.");
       navigate("/login");
     } catch (err: unknown) {
       if (err instanceof Error) {
