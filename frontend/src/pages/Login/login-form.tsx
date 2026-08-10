@@ -14,11 +14,15 @@ import {
   FieldLabel,
 } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
+import type { AuthFormProps } from "@/lib/auth"
 
 export function LoginForm({
   className,
+  onSubmit,
+  error,
+  isLoading,
   ...props
-}: React.ComponentProps<"div">) {
+}: AuthFormProps) {
   return (
     <div className={cn("flex flex-col gap-6", className)} {...props}>
       <Card>
@@ -29,12 +33,13 @@ export function LoginForm({
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form>
+          <form onSubmit={onSubmit}>
             <FieldGroup>
               <Field>
                 <FieldLabel htmlFor="email">Email</FieldLabel>
                 <Input
                   id="email"
+                  name="email"
                   type="email"
                   placeholder="m@example.com"
                   required
@@ -50,11 +55,18 @@ export function LoginForm({
                     Forgot your password?
                   </a>
                 </div>
-                <Input id="password" type="password" required />
+                <Input id="password" name="password" type="password" required />
               </Field>
+              {error && (
+                <p className="text-sm font-medium text-destructive text-center">
+                  {error}
+                </p>
+              )}
               <Field>
-                <Button type="submit">Login</Button>
-                <Button variant="outline" type="button">
+                <Button type="submit" disabled={isLoading}>
+                  {isLoading ? "Logging in..." : "Login"}
+                </Button>
+                <Button variant="outline" type="button" disabled={isLoading}>
                   Login with Google
                 </Button>
                 <FieldDescription className="text-center">

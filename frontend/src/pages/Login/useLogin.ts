@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { registerUser } from "./signupApi";
+import { loginUser } from "./loginApi";
 import { toast } from "sonner";
 
-export function useSignup() {
+export function useLogin() {
   const navigate = useNavigate();
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -14,22 +14,16 @@ export function useSignup() {
     setError(null);
 
     const formData = new FormData(e.currentTarget);
-    const fullname = formData.get("name") as string;
     const email = formData.get("email") as string;
     const password = formData.get("password") as string;
-    const confirmPassword = formData.get("confirm-password") as string;
-
-    if (password !== confirmPassword) {
-      setError("Passwords do not match");
-      toast.error("Passwords do not match");
-      setIsLoading(false);
-      return;
-    }
 
     try {
-      await registerUser({ fullname, email, password });
-      toast.success("Signup successful! Please log in.");
-      navigate("/login");
+      const response = await loginUser({ email, password });
+      const data = await response.json();
+      
+      // Usually you'd store the token here, e.g. localStorage.setItem("token", data.access_token)
+      toast.success("Login successful!");
+      navigate("/dashboard");
     } catch (err: unknown) {
       if (err instanceof Error) {
         setError(err.message);
