@@ -32,7 +32,7 @@ export async function authRequest<T>(
   });
 
   if (!response.ok) {
-    let errorMessage = defaultErrorMessage;
+    let errorMessage : string;
 
     try {
       const errorData = await response.json();
