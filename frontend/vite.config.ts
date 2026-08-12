@@ -21,15 +21,7 @@ export default defineConfig(({mode}) => {
         '/api': {
           target: apiUrl,
           changeOrigin: true,
-        },
-        '/verify-email': {
-          target: `${apiUrl}/api/auth`,
-          changeOrigin: true,
-        },
-        '/google': {
-          target: `${apiUrl}/api/auth`,
-          changeOrigin: true,
-        },
+        }
       }
     }
   }  

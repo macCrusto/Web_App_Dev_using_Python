@@ -19,7 +19,6 @@ import { Link } from "react-router-dom"
 export function ForgotPasswordForm({
   className,
   onSubmit,
-  error,
   isLoading,
   ...props
 }: AuthFormProps) {
@@ -45,11 +44,6 @@ export function ForgotPasswordForm({
                   required
                 />
               </Field>
-              {error && (
-                <p className="text-sm font-medium text-destructive text-center">
-                  {error}
-                </p>
-              )}
               <Field>
                 <Button type="submit" disabled={isLoading}>
                   {isLoading ? "Sending..." : "Send Reset Link"}

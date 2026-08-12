@@ -14,10 +14,12 @@ interface RequestOptions {
 }
 
 export async function authRequest<T>(
-  url: string,
+  endpoint: string,
   body: T,
   options: RequestOptions = {}
 ) {
+  const apiUrl = import.meta.env.VITE_API_URL;
+
   const {
     method = 'POST',
     headers = { 'Content-Type': 'application/json' },
@@ -25,11 +27,16 @@ export async function authRequest<T>(
     defaultErrorMessage = 'An error occurred. Please try again.',
   } = options;
 
-  const response = await fetch(url, {
+  const fetchOptions: RequestInit = {
     method,
     headers,
-    body: JSON.stringify(body),
-  });
+  };
+
+  if (method !== 'GET' && method !== 'HEAD' && body !== undefined && body !== null) {
+    fetchOptions.body = JSON.stringify(body);
+  }
+
+  const response = await fetch(`${apiUrl}/api/auth/${endpoint}`, fetchOptions);
 
   if (!response.ok) {
     let errorMessage : string;

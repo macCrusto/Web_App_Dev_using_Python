@@ -6,6 +6,6 @@ export interface LoginData {
 }
 
 export const loginUser = (data: LoginData) =>
-  authRequest('/api/auth/login', data, {
+  authRequest('login', data, {
     defaultErrorMessage: 'Failed to log in',
   });

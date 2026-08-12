@@ -48,7 +48,7 @@ def forgot_password():
         )
 
         # Send the reset link via email
-        reset_link = f"{Config.FRONTEND_URL}/reset-password/{reset_token}"
+        reset_link = f"{Config.FRONTEND_URL}api/auth/reset-password/{reset_token}"
 
         html = f"""
         <p>Hi {user["fullname"]},</p>

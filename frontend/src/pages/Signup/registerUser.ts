@@ -6,7 +6,7 @@ export interface RegisterData {
   password?: string;
 }
 export const registerUser = (data: RegisterData) =>
-  authRequest('/api/auth/register', data, {
+  authRequest('register', data, {
     errorMessages: {
       409: 'An account with this email already exists.',
     },

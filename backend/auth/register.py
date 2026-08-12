@@ -63,7 +63,7 @@ def register():
             (fullname, email, hashed_password, role, verification_token),
         )
 
-        verification_link = (f"{Config.FRONTEND_URL}/verify-email/{verification_token}")
+        verification_link = (f"{Config.FRONTEND_URL}/api/auth/verify-email/{verification_token}")
 
         html = f"""<h2>Welcome to Deep Sky, {fullname}!</h2>
         <p>Click the link below to verify your email:</p>
