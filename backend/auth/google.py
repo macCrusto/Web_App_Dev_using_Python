@@ -6,6 +6,7 @@ from config import Config
 from db import get_connection
 from extension import bcrypt
 import secrets
+from urllib.parse import quote
 
 @auth_bp.route("/google", methods=["GET"])
 def google_login():
@@ -16,63 +17,63 @@ def google_login():
 def google_callback():
     token = google.authorize_access_token()
     if not token:
-        return jsonify({"success": False, "message": "Failed to authorize with Google."}), 400
+        error_msg = quote("Failed to authorize with Google.")
+        return redirect(f"{Config.FRONTEND_URL}/#error={error_msg}")
 
-    # Step 2: Fetch user info from Google using the token
     try:
         user_info = google.get('userinfo', token=token).json()
     except Exception as e:
-        return jsonify({"success": False, "message": f"Failed to fetch user info: {str(e)}"}), 400
+        error_msg = quote(f"Failed to fetch user info: {str(e)}")
+        return redirect(f"{Config.FRONTEND_URL}/#error={error_msg}")
 
     google_id = user_info.get('sub')
     email = user_info.get('email')
-    name = user_info.get('name')
-    # picture = user_info.get('picture')   # optional
+    fullname = user_info.get('name')   # note: you used 'fullname' later but didn't define it
 
     if not google_id or not email:
-        return jsonify({"success": False, "message": "Missing required user data from Google."}), 400
+        error_msg = quote("Missing required user data from Google.")
+        return redirect(f"{Config.FRONTEND_URL}/#error={error_msg}")
 
     conn = None
     cursor = None
     try:
         conn = get_connection()
         cursor = conn.cursor()
-        
-        # Step 3: Check if the user exists in the database
-        
+
+        # Check if user exists via OAuthAccounts
         cursor.execute("""
             SELECT u.id, u.fullname, u.email, u.role, u.is_verified
             FROM OAuthAccounts o
             JOIN Users u ON o.user_id = u.id
             WHERE o.provider = %s AND o.provider_user_id = %s
         """, ('google', google_id))
-
         user = cursor.fetchone()
+
         if user:
             user_id = user["id"]
+            role = user["role"]
+            email = user["email"]
         else:
-            #check if email already exists in Users table
-            cursor.execute("""
-                SELECT id FROM Users WHERE email = %s
-            """, (email,))
+            # Check if email already exists
+            cursor.execute("SELECT id, role, email FROM Users WHERE email = %s", (email,))
             existing_user = cursor.fetchone()
-
             if existing_user:
                 user_id = existing_user["id"]
-
-                #Link the Google account to the existing user
+                role = existing_user["role"]
+                # Link Google account
                 cursor.execute("""
                     INSERT INTO OAuthAccounts (user_id, provider, provider_user_id)
                     VALUES (%s, %s, %s)
                 """, (user_id, 'google', google_id))
             else:
-                #Create a new user and link the Google account
+                # Create new user (use fullname from Google; if None, use email or default)
+                fullname = fullname or email.split('@')[0]
                 cursor.execute("""
                     INSERT INTO Users (fullname, email, password, is_verified, role)
                     VALUES (%s, %s, %s, %s, %s)
                 """, (fullname, email, None, True, 'user'))
                 user_id = cursor.lastrowid
-
+                role = 'user'
                 cursor.execute("""
                     INSERT INTO OAuthAccounts (user_id, provider, provider_user_id)
                     VALUES (%s, %s, %s)
@@ -80,32 +81,27 @@ def google_callback():
 
         conn.commit()
 
-        # Step 4: Generate JWT access token (same as normal login)
+        # Generate JWT
         access_token = create_access_token(
-            identity=str(user["id"]),
+            identity=str(user_id),
             additional_claims={
-                "role": user["role"],
-                "email": user["email"]
+                "role": role,
+                "email": email
             }
         )
-        
-        cursor.close()
-        conn.close()
 
-        # Step 5: Redirect to frontend with token as a **fragment** (not query param)
-        # Using fragment avoids exposing the token in server logs.
-        redirect_target = f"{Config.FRONTEND_URL}/#access_token={access_token}"
-        return redirect(redirect_target)
-
-        return jsonify({
-            "success": True,
-            "message": "Google authentication successful.",
-            "access_token": access_token
-        }), 200
+        # Redirect with token in fragment
+        return redirect(f"{Config.FRONTEND_URL}/#access_token={access_token}")
 
     except Exception as e:
         try:
             conn.rollback()
         except:
             pass
-        return jsonify({"success": False, "message": f"Error during Google OAuth: {str(e)}"}), 500
+        error_msg = quote(f"Server error during Google OAuth: {str(e)}")
+        return redirect(f"{Config.FRONTEND_URL}/#error={error_msg}")
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
