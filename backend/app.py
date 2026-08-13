@@ -1,4 +1,4 @@
-from flask import Flask #type: ignore
+from flask import Flask
 from flask_cors import CORS
 from extension import bcrypt, jwt, oauth
 from auth import auth_bp

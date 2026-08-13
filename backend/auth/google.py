@@ -9,10 +9,12 @@ from urllib.parse import quote
 
 @auth_bp.route("/google", methods=["GET"])
 def google_login():
-    redirect_uri = url_for("auth_bp.google_callback", _external=True)
-    # Authlib returns a Werkzeug response with a Location header for redirects
-    response = google.authorize_redirect(redirect_uri)
-    return jsonify({"success": True, "url": response.headers["Location"]})
+    try:
+        redirect_uri = url_for("auth.google_callback", _external=True)
+        response = google.authorize_redirect(redirect_uri)
+        return jsonify({"success": True, "url": response.headers["Location"]})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
 
 @auth_bp.route("/google/callback", methods=["GET"])
 def google_callback():

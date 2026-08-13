@@ -20,3 +20,6 @@ class Config:
     BREVO_API_KEY = os.getenv("BREVO_API_KEY")
     MAIL_FROM_TITLE = os.getenv("MAIL_FROM_TITLE")
     MAIL_FROM = os.getenv("MAIL_FROM")
+
+    SERVER_NAME = os.getenv("SERVER_NAME")
+    PREFERRED_URL_SCHEME = "https"
