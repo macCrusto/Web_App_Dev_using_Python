@@ -8,7 +8,8 @@ export interface AuthFormProps extends Omit<React.ComponentProps<"div">, "onSubm
 
 interface RequestOptions {
   method?: string;          
-  headers?: HeadersInit;          
+  headers?: HeadersInit;
+  credentials?: string;          
   errorMessages?: Record<number, string>; 
   defaultErrorMessage?: string;   
 }
@@ -40,6 +41,10 @@ export async function authRequest<T>(
       'Content-Type': 'application/json',
     };
     fetchOptions.body = JSON.stringify(body);
+  }
+
+  if (endpoint === 'google') {
+    fetchOptions.credentials = 'include'
   }
 
   const response = await fetch(`${apiUrl}/api/auth/${endpoint}`, fetchOptions);

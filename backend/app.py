@@ -13,6 +13,9 @@ app.config["SERVER_NAME"] = Config.SERVER_NAME
 app.config["PREFERRED_URL_SCHEME"] = Config.PREFERRED_URL_SCHEME
 app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1)
 
+app.config["SESSION_COOKIE_SECURE"] = Config.SESSION_COOKIE_SECURE
+app.config["SESSION_COOKIE_SAMESITE"] = Config.SESSION_COOKIE_SAMESITE
+
 app.config["BREVO_API_KEY"] = Config.BREVO_API_KEY
 app.config["MAIL_FROM"] = Config.MAIL_FROM
 app.config["MAIL_FROM_TITLE"] = Config.MAIL_FROM_TITLE

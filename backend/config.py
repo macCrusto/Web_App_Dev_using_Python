@@ -7,6 +7,8 @@ class Config:
     GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")
 
     SECRET_KEY = os.getenv("MY_SECRET_KEY")
+    SESSION_COOKIE_SAMESITE = "None"
+    SESSION_COOKIE_SECURE = True
     
     FRONTEND_URL = os.getenv("FRONTEND_URL")
 

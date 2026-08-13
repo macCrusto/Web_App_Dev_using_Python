@@ -1,4 +1,4 @@
-from flask import request, jsonify, redirect, url_for
+from flask import request, jsonify, redirect, url_for, session  # <-- add session import
 from flask_jwt_extended import create_access_token
 from . import auth_bp
 from oauth import google
@@ -11,14 +11,26 @@ from urllib.parse import quote
 def google_login():
     try:
         redirect_uri = url_for("auth.google_callback", _external=True)
-        response = google.authorize_redirect(redirect_uri)
-        return jsonify({"success": True, "url": response.headers["Location"]})
+
+        # 1. Get authorization URL and state (without generating a response)
+        url, state = google.create_authorization_url(redirect_uri)
+
+        # 2. Store the state in the session under the key Authlib expects
+        session['_authlib_oauth_state_google'] = state
+        
+        # 3. Return the URL as JSON; session will be saved with the response
+        return jsonify({"success": True, "url": url})
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
 
 @auth_bp.route("/google/callback", methods=["GET"])
 def google_callback():
-    token = google.authorize_access_token()
+    try:
+        token = google.authorize_access_token()
+    except Exception as e:
+        error_msg = quote("Login session expired or multiple tabs opened. Please try again.")
+        return redirect(f"{Config.FRONTEND_URL}/login#error={error_msg}")
+
     if not token:
         error_msg = quote("Failed to authorize with Google.")
         return redirect(f"{Config.FRONTEND_URL}/#error={error_msg}")
