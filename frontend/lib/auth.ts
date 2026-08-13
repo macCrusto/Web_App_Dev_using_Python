@@ -32,7 +32,13 @@ export async function authRequest<T>(
     headers,
   };
 
-  if (method !== 'GET' && method !== 'HEAD' && body !== undefined && body !== null) {
+  // Only set Content-Type and body if we actually have a payload
+  const hasBody = method !== 'GET' && method !== 'HEAD' && body !== undefined && body !== null;
+  if (hasBody) {
+    fetchOptions.headers = {
+      ...fetchOptions.headers,
+      'Content-Type': 'application/json',
+    };
     fetchOptions.body = JSON.stringify(body);
   }
 

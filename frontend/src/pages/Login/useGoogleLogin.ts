@@ -91,10 +91,11 @@ export function useGoogleLogin() {
       } else {
         throw new Error('Failed to retrieve authorization URL.');
       }
-    } catch (error: any) {
-      dispatch({ type: 'SET_ERROR', payload: error.message });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'An unknown error occurred';
+      dispatch({ type: 'SET_ERROR', payload: message });
       dispatch({ type: 'SET_LOADING', payload: false });
-      toast.error(error.message);
+      toast.error(message);
     }
   };
 
