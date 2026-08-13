@@ -22,7 +22,7 @@ export async function authRequest<T>(
 
   const {
     method = 'POST',
-    headers = { 'Content-Type': 'application/json' },
+    headers = {},
     errorMessages = {},
     defaultErrorMessage = 'An error occurred. Please try again.',
   } = options;
