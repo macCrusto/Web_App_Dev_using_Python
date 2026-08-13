@@ -2,4 +2,4 @@ from flask import Blueprint
 
 auth_bp = Blueprint("auth", __name__)
 
-from . import register, login, verify, password, test
+from . import register, login, verify, password, google, test

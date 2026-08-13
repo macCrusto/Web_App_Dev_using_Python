@@ -20,7 +20,6 @@ import type { AuthFormProps } from "@/lib/auth"
 export function SignupForm({
   className,
   onSubmit,
-  error,
   isLoading,
   ...props
 }: AuthFormProps) {
@@ -83,11 +82,6 @@ export function SignupForm({
                   Must be at least 6 characters long.
                 </FieldDescription>
               </Field>
-              {error && (
-                <p className="text-sm font-medium text-destructive text-center">
-                  {error}
-                </p>
-              )}
               <Field>
                 <Button type="submit" disabled={isLoading}>
                   {isLoading ? "Creating Account..." : "Create Account"}

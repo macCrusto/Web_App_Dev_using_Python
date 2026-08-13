@@ -24,7 +24,6 @@ interface LoginFormProps extends AuthFormProps {
 export function LoginForm({
   className,
   onSubmit,
-  error,
   isLoading,
   onGoogleLogin,
   ...props
@@ -63,11 +62,6 @@ export function LoginForm({
                 </div>
                 <Input id='password' name='password' type='password' required />
               </Field>
-              {error && (
-                <p className='text-sm font-medium text-destructive text-center'>
-                  {error}
-                </p>
-              )}
               <Field>
                 <Button type='submit' disabled={isLoading}>
                   {isLoading ? 'Logging in...' : 'Login'}
