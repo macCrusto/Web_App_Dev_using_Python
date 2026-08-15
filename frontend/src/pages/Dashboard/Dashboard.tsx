@@ -8,7 +8,7 @@ export default function Dashboard() {
     localStorage.removeItem("refresh_token")
     localStorage.removeItem("access_expiry")
     localStorage.removeItem("refresh_expiry")
-    navigate("/")
+    navigate("/login")
   }
 
   return (

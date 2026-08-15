@@ -1,4 +1,4 @@
-from flask import request, jsonify, redirect, url_for, session  # <-- add session import
+from flask import request, jsonify, redirect, url_for, session
 from flask_jwt_extended import create_access_token
 from . import auth_bp
 from oauth import google
@@ -17,7 +17,7 @@ def google_login():
 
         # 2. Store the state in the session under the key Authlib expects
         session['_authlib_oauth_state_google'] = state
-        
+
         # 3. Return the URL as JSON; session will be saved with the response
         return jsonify({"success": True, "url": url})
     except Exception as e:
