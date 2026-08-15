@@ -14,9 +14,9 @@ app.config["PREFERRED_URL_SCHEME"] = Config.PREFERRED_URL_SCHEME
 app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1)
 
 app.config.update(
-    SESSION_COOKIE_SAMESITE=Config.SESSION_COOKIE_SAMESITE,
-    SESSION_COOKIE_SECURE=Config.SESSION_COOKIE_SECURE,
-    SESSION_COOKIE_HTTPONLY=True
+    SESSION_COOKIE_DOMAIN=".vercel.app", 
+    SESSION_COOKIE_SAMESITE="Lax",        
+    SESSION_COOKIE_SECURE=True
 )
 
 app.config["BREVO_API_KEY"] = Config.BREVO_API_KEY
