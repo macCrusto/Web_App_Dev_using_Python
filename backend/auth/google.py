@@ -13,13 +13,13 @@ def google_login():
         redirect_uri = url_for("auth.google_callback", _external=True)
 
         # 1. Get authorization URL and state (without generating a response)
-        url, state = google.create_authorization_url(redirect_uri)
+        auth_data = google.create_authorization_url(redirect_uri)
 
         # 2. Store the state in the session under the key Authlib expects
-        session['_authlib_oauth_state_google'] = state
+        google.save_authorize_data(redirect_uri=redirect_uri, **auth_data)
 
         # 3. Return the URL as JSON; session will be saved with the response
-        return jsonify({"success": True, "url": url})
+        return jsonify({"success": True, "url": auth_data["url"]})
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
 
