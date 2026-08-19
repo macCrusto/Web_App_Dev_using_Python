@@ -2,6 +2,7 @@ from flask import Flask
 from flask_cors import CORS
 from extension import bcrypt, jwt, oauth
 from auth import auth_bp
+from courses import course_bp
 from config import Config
 from werkzeug.middleware.proxy_fix import ProxyFix
 
@@ -28,6 +29,7 @@ jwt.init_app(app)
 oauth.init_app(app)
 
 app.register_blueprint(auth_bp, url_prefix="/api/auth")
+app.register_blueprint(course_bp, url_prefix="/api/courses")
 
 # Reserved for local server deployment
 # if __name__ == "__main__":
