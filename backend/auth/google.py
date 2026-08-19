@@ -12,14 +12,12 @@ def google_login():
     try:
         redirect_uri = url_for("auth.google_callback", _external=True)
 
-        # 1. Get authorization URL and state (without generating a response)
-        auth_data = google.create_authorization_url(redirect_uri)
+        if request.headers.get("Accept") == "application/json" or request.args.get("format") == "json":
+            auth_data = google.create_authorization_url(redirect_uri)
+            google.save_authorize_data(redirect_uri=redirect_uri, **auth_data)
+            return jsonify({"success": True, "url": auth_data["url"]})
 
-        # 2. Store the state in the session under the key Authlib expects
-        google.save_authorize_data(redirect_uri=redirect_uri, **auth_data)
-
-        # 3. Return the URL as JSON; session will be saved with the response
-        return jsonify({"success": True, "url": auth_data["url"]})
+        return google.authorize_redirect(redirect_uri)
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
 
@@ -28,26 +26,26 @@ def google_callback():
     try:
         token = google.authorize_access_token()
     except Exception as e:
-        error_msg = quote("Login session expired or multiple tabs opened. Please try again.")
+        error_msg = quote(f"Login session expired or state mismatch: {str(e)}")
         return redirect(f"{Config.FRONTEND_URL}/login#error={error_msg}")
 
     if not token:
         error_msg = quote("Failed to authorize with Google.")
-        return redirect(f"{Config.FRONTEND_URL}/#error={error_msg}")
+        return redirect(f"{Config.FRONTEND_URL}/login#error={error_msg}")
 
     try:
         user_info = google.get('userinfo', token=token).json()
     except Exception as e:
         error_msg = quote(f"Failed to fetch user info: {str(e)}")
-        return redirect(f"{Config.FRONTEND_URL}/#error={error_msg}")
+        return redirect(f"{Config.FRONTEND_URL}/login#error={error_msg}")
 
     google_id = user_info.get('sub')
     email = user_info.get('email')
-    fullname = user_info.get('name')   # note: you used 'fullname' later but didn't define it
+    fullname = user_info.get('name')
 
     if not google_id or not email:
         error_msg = quote("Missing required user data from Google.")
-        return redirect(f"{Config.FRONTEND_URL}/#error={error_msg}")
+        return redirect(f"{Config.FRONTEND_URL}/login#error={error_msg}")
 
     conn = None
     cursor = None
@@ -105,8 +103,8 @@ def google_callback():
             }
         )
 
-        # Redirect with token in fragment
-        return redirect(f"{Config.FRONTEND_URL}/#access_token={access_token}")
+        # Redirect with token in fragment to login page
+        return redirect(f"{Config.FRONTEND_URL}/login#access_token={access_token}")
 
     except Exception as e:
         try:
@@ -114,7 +112,7 @@ def google_callback():
         except:
             pass
         error_msg = quote(f"Server error during Google OAuth: {str(e)}")
-        return redirect(f"{Config.FRONTEND_URL}/#error={error_msg}")
+        return redirect(f"{Config.FRONTEND_URL}/login#error={error_msg}")
     finally:
         if cursor:
             cursor.close()
