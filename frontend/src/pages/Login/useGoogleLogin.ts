@@ -2,7 +2,6 @@ import { useEffect, useRef, useReducer } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 
-import { authRequest } from '@/lib/auth';
 
 // ---- State & Reducer ----
 type State = {
@@ -79,24 +78,12 @@ export function useGoogleLogin() {
     }
   }, [navigate]);
 
-  const initiateGoogleLogin = async () => {
+  const initiateGoogleLogin = () => {
     dispatch({ type: 'RESET' });
     dispatch({ type: 'SET_LOADING', payload: true });
     
-    try {
-      const response = await authRequest('google', null, { method: 'GET' });
-      const data = await response.json();
-      if (data.url) {
-        window.location.href = data.url;
-      } else {
-        throw new Error('Failed to retrieve authorization URL.');
-      }
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'An unknown error occurred';
-      dispatch({ type: 'SET_ERROR', payload: message });
-      dispatch({ type: 'SET_LOADING', payload: false });
-      toast.error(message);
-    }
+    const apiUrl = import.meta.env.VITE_API_URL || '';
+    window.location.href = `${apiUrl}/api/auth/google`;
   };
 
   return {
