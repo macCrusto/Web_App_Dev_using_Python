@@ -10,14 +10,15 @@ app = Flask(__name__)
 CORS(app, origins=[Config.FRONTEND_URL], supports_credentials=True)
 app.config.from_object(Config)
 
-app.config["SERVER_NAME"] = Config.SERVER_NAME
+if Config.SERVER_NAME:
+    app.config["SERVER_NAME"] = Config.SERVER_NAME
 app.config["PREFERRED_URL_SCHEME"] = Config.PREFERRED_URL_SCHEME
-app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1)
+app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
 
 app.config.update(
-    SESSION_COOKIE_DOMAIN=".vercel.app", 
-    SESSION_COOKIE_SAMESITE="Lax",        
-    SESSION_COOKIE_SECURE=True
+    SESSION_COOKIE_SAMESITE=Config.SESSION_COOKIE_SAMESITE,
+    SESSION_COOKIE_SECURE=Config.SESSION_COOKIE_SECURE,
+    SESSION_COOKIE_HTTPONLY=True
 )
 
 app.config["BREVO_API_KEY"] = Config.BREVO_API_KEY
