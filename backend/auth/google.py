@@ -33,15 +33,33 @@ def google_callback():
         error_msg = quote("Failed to authorize with Google.")
         return redirect(f"{Config.FRONTEND_URL}/login#error={error_msg}")
 
-    try:
-        user_info = google.get('userinfo', token=token).json()
-    except Exception as e:
-        error_msg = quote(f"Failed to fetch user info: {str(e)}")
-        return redirect(f"{Config.FRONTEND_URL}/login#error={error_msg}")
+    user_info = None
+    # 1. Try to get userinfo already parsed by Authlib from the ID token
+    if isinstance(token, dict) and "userinfo" in token:
+        user_info = token["userinfo"]
+    elif hasattr(google, "parse_id_token"):
+        try:
+            user_info = google.parse_id_token(token)
+        except Exception:
+            pass
 
-    google_id = user_info.get('sub')
-    email = user_info.get('email')
-    fullname = user_info.get('name')
+    # 2. If not found, fetch from Google userinfo endpoint
+    if not user_info:
+        try:
+            resp = google.get("https://openidconnect.googleapis.com/v1/userinfo", token=token)
+            if resp.status_code == 200:
+                user_info = resp.json()
+            else:
+                resp = google.get("userinfo", token=token)
+                user_info = resp.json()
+        except Exception as e:
+            error_msg = quote(f"Failed to fetch user info: {str(e)}")
+            return redirect(f"{Config.FRONTEND_URL}/login#error={error_msg}")
+
+    # Extract user attributes (Google OIDC uses 'sub', v1 API uses 'id')
+    google_id = user_info.get("sub") or user_info.get("id")
+    email = user_info.get("email")
+    fullname = user_info.get("name") or user_info.get("given_name") or (email.split("@")[0] if email else "User")
 
     if not google_id or not email:
         error_msg = quote("Missing required user data from Google.")
