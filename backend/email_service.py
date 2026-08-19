@@ -1,4 +1,3 @@
-# from extension import mail
 from brevo import Brevo
 from brevo.transactional_emails import (
     SendTransacEmailRequestSender, 
