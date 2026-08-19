@@ -42,4 +42,4 @@ def create():
         cursor.close()
         conn.close()
 
-    return jsonify({"success": True, "message": f"Course {title} created successfully"}), 400
+    return jsonify({"success": True, "message": f"Course {title} created successfully"}), 200
