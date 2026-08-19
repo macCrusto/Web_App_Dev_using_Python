@@ -74,7 +74,7 @@ def google_callback():
         # Check if user exists via OAuthAccounts
         cursor.execute("""
             SELECT u.id, u.fullname, u.email, u.role, u.is_verified
-            FROM OAuthAccounts o
+            FROM OAuthAccount o
             JOIN Users u ON o.user_id = u.id
             WHERE o.provider = %s AND o.provider_user_id = %s
         """, ('google', google_id))
@@ -93,7 +93,7 @@ def google_callback():
                 role = existing_user["role"]
                 # Link Google account
                 cursor.execute("""
-                    INSERT INTO OAuthAccounts (user_id, provider, provider_user_id)
+                    INSERT INTO OAuthAccount (user_id, provider, provider_user_id)
                     VALUES (%s, %s, %s)
                 """, (user_id, 'google', google_id))
             else:
@@ -106,7 +106,7 @@ def google_callback():
                 user_id = cursor.lastrowid
                 role = 'user'
                 cursor.execute("""
-                    INSERT INTO OAuthAccounts (user_id, provider, provider_user_id)
+                    INSERT INTO OAuthAccount (user_id, provider, provider_user_id)
                     VALUES (%s, %s, %s)
                 """, (user_id, 'google', google_id))
 
