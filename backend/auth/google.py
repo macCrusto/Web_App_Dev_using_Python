@@ -6,6 +6,7 @@ from config import Config
 from db import get_connection
 from extension import bcrypt
 from urllib.parse import quote
+import secrets
 
 @auth_bp.route("/google", methods=["GET"])
 def google_login():
@@ -99,10 +100,11 @@ def google_callback():
             else:
                 # Create new user (use fullname from Google; if None, use email or default)
                 fullname = fullname or email.split('@')[0]
+                password = secrets.token_urlsafe(32)
                 cursor.execute("""
                     INSERT INTO Users (fullname, email, password, is_verified, role)
                     VALUES (%s, %s, %s, %s, %s)
-                """, (fullname, email, None, True, 'user'))
+                """, (fullname, email, password, True, 'user'))
                 user_id = cursor.lastrowid
                 role = 'user'
                 cursor.execute("""
