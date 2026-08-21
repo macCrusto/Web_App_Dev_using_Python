@@ -14,13 +14,12 @@ def create():
     price = data.get('price', 0)
     currency = data.get('currency', 'NGN')
     free_count = data.get('free_count', 1)
-    slug = title.strip()
+    description = data.get('description')
+    thumbnail = data.get('description')
+    status = data.get('status', 'DRAFT')
 
-    if not title:
+    if not title.strip():
         return jsonify({"success": False, "message": "Course title must be provided"}), 400
-
-    if not currency:
-        return jsonify({"success": False, "message": "Currency must be provided"}), 400
 
     if price <= 0:
         return jsonify({"success": False, "message": "Price must be greater than 0"}), 400
@@ -34,12 +33,65 @@ def create():
         cursor = conn.cursor()
 
         cursor.execute("""SELECT * FROM Users WHERE id = %s""", (user_id,))
+
+        user = cursor.fetchone()
+
+        if not user:
+            return jsonify({"success": False, "message": "User not found!"}), 404
+
+        if user["role"] !== "INSTRUCTOR":
+            return jsonify({"success": False, "message": "Only Instructor can create a course!"}), 403
         
+        slug = slugify(title)
+
+        if not slug: 
+            return jsonify({"success": False, "message": "Unable to generate course slug!"})
+        
+        cursor.execute("""
+                        INSERT INTO course 
+                        (instructor_id, title, slug, description, thumbnail_url, price, currency, status, free_count)
+                       VALUES (%s, %s, %s %s, %s, %s, %s, %s, %s)
+                        """, (
+                            user_id,
+                            title.strip(),
+                            slug,
+                            description,
+                            thumbnail,
+                            price,
+                            currency,
+                            status,
+                            free_count
+                        ))
+        
+        course_id = cursor.lastrowid
+        conn.commit()
+
+        return jsonify({
+            "success": True,
+            "message": "Course created successfully.",
+            "course": {
+                "id": course_id,
+                "instructor": user_id,
+                "title": title,
+                "slug": slug,
+                "description": description,
+                "thumbnail": thumbnail,
+                "price": price,
+                "currency": currency,
+                "status": status,
+                "free_count": free_count
+            }
+        }), 201
+
     except Exception as e:
-        return jsonify({"success": False, "message": e}), 400
+        return jsonify(
+                {"success": False, 
+                 "message": "Failed to create course.", 
+                 "error": str(e)}), 500
 
     finally:
-        cursor.close()
-        conn.close()
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
 
-    return jsonify({"success": True, "message": f"Course {title} created successfully"}), 200
