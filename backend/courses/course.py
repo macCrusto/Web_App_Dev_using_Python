@@ -95,3 +95,32 @@ def create_course():
         if conn:
             conn.close()
 
+@course_bp.route("/<int:course_id>", methods=["GET"])
+@jwt_required()
+def get_course(course_id):
+    user_id = get_jwt_identity()
+
+    if not user_id:
+        return jsonify({"success": False, "message":""}), 404
+
+    conn = None
+    try:
+        conn = get_connection()
+        with conn.cursor() as cursor:
+            cursor.execute("""SELECT * FROM course 
+                            WHERE id=%s AND instructor_id=%s""", 
+                            (course_id, user_id))
+            
+            course =  cursor.fetchone()
+
+            if not course:
+                return jsonify({"success": False, "message": "Course not found."}), 404
+
+            return jsonify({"success": True, "message": f"Course found: {course["title"]}", "course": course})
+
+    except Exception as e:
+        return jsonify({"success": False, "message": "Cannot establish a connection at the moment."}), 500
+
+    finally:
+        if conn:
+            conn.close()
