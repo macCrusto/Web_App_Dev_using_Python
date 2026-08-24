@@ -26,7 +26,8 @@ function App() {
       </div>
       <Router>
         <Routes>
-          <Route path='/' element={<SignupPage />} />
+          
+          <Route path='/signup' element={<SignupPage />} />
           <Route path='/login' element={<LogInPage />} />
           <Route path='/dashboard' element={<Dashboard />} />
           <Route path='/forgot-password' element={<ForgotPasswordPage />} />
@@ -34,8 +35,9 @@ function App() {
             path='/reset-password/:token'
             element={<ResetPasswordPage />}
           />
-          {/* Redirect any other unknown path to the default signup route */}
-          <Route path='*' element={<Navigate to='/' replace />} />
+
+          {/* Fallback */}
+          <Route path='*' element={<Navigate to='/login' replace />} />
         </Routes>
       </Router>
       <Toaster richColors position='top-right' />
