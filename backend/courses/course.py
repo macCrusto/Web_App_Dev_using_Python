@@ -6,7 +6,7 @@ from db import get_connection
 
 @course_bp.route("/create", methods=["POST"])
 @jwt_required()
-def create():
+def create_course():
     user_id = get_jwt_identity()
     data = request.get_json()
 
@@ -15,7 +15,7 @@ def create():
     currency = data.get('currency', 'NGN')
     free_count = data.get('free_count', 1)
     description = data.get('description')
-    thumbnail = data.get('description')
+    thumbnail = data.get('thumbnail')
     status = data.get('status', 'DRAFT')
 
     if not title.strip():
@@ -39,7 +39,7 @@ def create():
         if not user:
             return jsonify({"success": False, "message": "User not found!"}), 404
 
-        if user["role"] !== "INSTRUCTOR":
+        if user["role"] != "INSTRUCTOR":
             return jsonify({"success": False, "message": "Only Instructor can create a course!"}), 403
         
         slug = slugify(title)
