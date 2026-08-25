@@ -116,6 +116,13 @@ def get_course(course_id):
             if not course:
                 return jsonify({"success": False, "message": "Course not found."}), 404
 
+            # Check if course is published (or user is instructor)
+            if course["status"] != "PUBLISHED" and course["instructor_id"] != user_id:
+                return jsonify({
+                    "success": False, 
+                    "message": "This course is not available!"
+                }), 403
+
             return jsonify({"success": True, "message": f"Course found: {course["title"]}", "course": course})
 
     except Exception as e:
