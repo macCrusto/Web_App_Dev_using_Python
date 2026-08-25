@@ -27,14 +27,19 @@ def create_module(course_id):
         conn = get_connection()
         cursor = conn.cursor()
         
-        # Check if course exists and belongs to the instructor
-        cursor.execute("""
-            SELECT id, title FROM course WHERE id = %s AND instructor_id = %s
-        """, (course_id, user_id))
-
-        course = cursor.fetchone()
+        # Check if course exists and belongs to the instructor using helper function
+        course, is_instructor, is_enrolled, has_full_access = get_course_with_access_check(
+            cursor, course_id, user_id
+        )
+        
         if not course:
-            return jsonify({"success": False, "message": "Course not found or you don't have permission!"}), 404
+            return jsonify({"success": False, "message": "Course not found!"}), 404
+            
+        if not is_instructor:
+            return jsonify({
+                "success": False, 
+                "message": "Only the course instructor can create modules!"
+            }), 403
         
         # Check if position is already taken
         cursor.execute("""
@@ -43,7 +48,10 @@ def create_module(course_id):
         
         existing_module = cursor.fetchone()
         if existing_module:
-            return jsonify({"success": False, "message": f"Module position {position} is already taken!"}), 400
+            return jsonify({
+                "success": False, 
+                "message": f"Module position {position} is already taken!"
+            }), 400
 
         cursor.execute("""
             INSERT INTO module (course_id, description, module_position) 
@@ -53,25 +61,34 @@ def create_module(course_id):
         module_id = cursor.lastrowid
         conn.commit()
         
+        # Get the created module to return consistent response
+        cursor.execute("""
+            SELECT id, description, module_position as position, created_at, updated_at
+            FROM module 
+            WHERE id = %s
+        """, (module_id,))
+        
+        new_module = cursor.fetchone()
+
         return jsonify({
             "success": True,
             "message": "Module created successfully.",
-            "module": {
-                "id": module_id,
-                "course_id": course_id,
-                "description": description,
-                "position": position
-            }
+            "module": new_module
         }), 201
 
     except Exception as e:
-        return jsonify({"success": False, "message": "Failed to create module", "error": str(e)}), 500
-
+        return jsonify({
+            "success": False, 
+            "message": "Failed to create module", 
+            "error": str(e)
+        }), 500
+        
     finally:
         if cursor:
             cursor.close()
         if conn:
-            conn.close() 
+            conn.close()
+
 @course_bp.route("/<int:course_id>/modules", methods=["GET"])
 @jwt_required()
 def get_course_modules(course_id):
