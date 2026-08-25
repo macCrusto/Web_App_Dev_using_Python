@@ -1,7 +1,6 @@
 from . import course_bp
 from flask import request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
-from slugify import slugify
 from db import get_connection
 
 @course_bp.route("/<int:course_id>/modules", methods=["POST"])
@@ -14,10 +13,11 @@ def create_module(course_id):
     description = data.get('description')
     position = data.get('position')
 
-
-    if not title.strip():
+    if not title or not title.strip():
         return jsonify({"success": False, "message": "Title cannot be empty!"}), 400
-    
+
+    if position is None:
+        return jsonify({"success": False, "message": "Position is required!"}), 400
 
     conn = None
     cursor = None
@@ -25,31 +25,43 @@ def create_module(course_id):
     try:
         conn = get_connection()
         cursor = conn.cursor()
+        
+        # Check if course exists and belongs to the instructor
         cursor.execute("""
             SELECT id, title FROM course WHERE id = %s AND instructor_id = %s
         """, (course_id, user_id))
 
         course = cursor.fetchone()
         if not course:
-            return jsonify({"success": False, "message": "Course is not found!"}), 404
+            return jsonify({"success": False, "message": "Course not found or you don't have permission!"}), 404
         
+        # Check if position is already taken
         cursor.execute("""
-            INSERT INTO module 
-                        (course_id, title, description, position) VALUES
-                       (%s, %s, %s, %s) 
-        """, (course_id, title, description, position))
-        module_id = cursor.lastrowid
+            SELECT id FROM module WHERE course_id = %s AND module_position = %s
+        """, (course_id, position))
+        
+        existing_module = cursor.fetchone()
+        if existing_module:
+            return jsonify({"success": False, "message": f"Module position {position} is already taken!"}), 400
 
-        conn.commit() 
+        cursor.execute("""
+            INSERT INTO module (course_id, description, module_position) 
+            VALUES (%s, %s, %s)
+        """, (course_id, description, position))
+        
+        module_id = cursor.lastrowid
+        conn.commit()
+        
         return jsonify({
             "success": True,
             "message": "Module created successfully.",
-            "course": {
+            "module": {
                 "id": module_id,
-                "instructor": user_id,
-                "title": title,
-                }
-                }), 201
+                "course_id": course_id,
+                "description": description,
+                "position": position
+            }
+        }), 201
 
     except Exception as e:
         return jsonify({"success": False, "message": "Failed to create module", "error": str(e)}), 500
