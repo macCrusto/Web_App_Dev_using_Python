@@ -3,6 +3,7 @@ from flask import request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from slugify import slugify
 from db import get_connection
+from .module_utils import get_course_with_access_check
 
 @course_bp.route("/create", methods=["POST"])
 @jwt_required()
@@ -106,24 +107,34 @@ def get_course(course_id):
     conn = None
     try:
         conn = get_connection()
-        with conn.cursor() as cursor:
-            cursor.execute("""SELECT * FROM course 
-                            WHERE id=%s AND instructor_id=%s""", 
-                            (course_id, user_id))
+        cursor = conn.cursor()
+
+        # Check if course exists and belongs to the instructor using helper function
+        course, is_instructor, is_enrolled, has_full_access = get_course_with_access_check(
+            cursor, course_id, user_id
+        )
+    
+        if not course:
+            return jsonify({"success": False, "message": "Course not found."}), 404
             
-            course =  cursor.fetchone()
+        if not is_instructor:
+            return jsonify({
+                "success": False, 
+                "message": "Only the course instructor can create modules!"
+            }), 403
 
-            if not course:
-                return jsonify({"success": False, "message": "Course not found."}), 404
+        # Check if course is published (or user is instructor)
+        if course["status"] != "PUBLISHED" and course["instructor_id"] != user_id:
+            return jsonify({
+                "success": False, 
+                "message": "This course is not available!"
+            }), 403
 
-            # Check if course is published (or user is instructor)
-            if course["status"] != "PUBLISHED" and course["instructor_id"] != user_id:
-                return jsonify({
-                    "success": False, 
-                    "message": "This course is not available!"
-                }), 403
-
-            return jsonify({"success": True, "message": f"Course found: {course["title"]}", "course": course})
+        return jsonify({
+            "success": True,
+            "message": f"Course found: {course["title"]}",
+            "course": course
+            }), 200
 
     except Exception as e:
         return jsonify({"success": False, "message": "Cannot establish a connection at the moment."}), 500
