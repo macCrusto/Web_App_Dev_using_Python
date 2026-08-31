@@ -3,9 +3,11 @@ from flask import request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from db import get_connection
 from .module_utils import get_course_with_access_check, get_lessons_with_access_control, build_module_response
+from decorators import instructor_required
 
 @course_bp.route("/<int:course_id>/modules", methods=["POST"])
 @jwt_required()
+@instructor_required
 def create_module(course_id):
     user_id = get_jwt_identity()
     data = request.get_json()
@@ -34,12 +36,6 @@ def create_module(course_id):
         
         if not course:
             return jsonify({"success": False, "message": "Course not found!"}), 404
-            
-        if not is_instructor:
-            return jsonify({
-                "success": False, 
-                "message": "Only the course instructor can create modules!"
-            }), 403
         
         # Check if position is already taken
         cursor.execute("""
@@ -237,3 +233,99 @@ def get_course_module(course_id, module_id):
             cursor.close()
         if conn:
             conn.close()
+
+@course_bp.route("/modules/<int:module_id>", methods=["PUT"])
+@jwt_required()
+@instructor_required
+def update_module(module_id):
+
+    user_id = get_jwt_identity()
+    data = request.get_json()
+
+    if not data:
+        return jsonify({"success": False, "message":"Request body is required."})
+    
+    title = data.get("title")
+    description = data.get("description")
+    position = data.get("position")
+
+    if not or not title.strip():
+            return jsonify({"success": False, "message":  "Module title must not be empty."})
+        
+    if not description.strip():
+        return jsonify({"success": False, "message":  "Module description must not be empty."})
+    
+
+    conn = None
+    try:
+        conn = get_connection()
+        with conn.cursor() as cursor:
+
+            cursor.execute("""
+            SELECT m.id, m.title, m.description, m.module_position, c.id FROM module m
+            INNER JOIN course c ON m.course_id = m.id               
+            WHERE m.id = %s AND c.instructor_id = %s
+        """, (module_id, user_id))
+            
+            module = cursor.fetchone()
+
+            if not module:
+                return jsonify({"success": False, "message":"Module not found or you do not own any module."}), 404
+            
+            new_title = title
+            new_description = description 
+            new_position = position
+
+            cursor.execute("""
+                                UPDATE module SET title = %s, description = %s, position = %s
+                                WHERE id = %s;
+                           """, new_title, new_description, new_position, module_id)
+
+        conn.commit()
+        return jsonify({
+                    "success": True,
+                    "message": "Module updated successfully.",
+                    "module": {
+                        "id": module_id,
+                        "title": new_title,
+                        "description": new_description
+                    }
+                }), 200
+                
+    except Exception as e:
+        return jsonify({
+                    "success": True,
+                    "message": "Failed to update module."})
+    finally:
+        conn.close()
+
+
+@course_bp.route("course/module/<int:module_id>", methods=["DELETE"])
+@jwt_required()
+@instructor_required
+def delete_module(module_id):
+    user_id = get_jwt_identity()
+    conn = None
+    try:
+        conn = get_connection()
+        with conn.cursor() as cursor:
+            cursor.execute("""
+                SELECT m.id FROM module m INNER JOIN course c ON m.course_id = c.id
+                WHERE m.id = %s and c.instructor_id = %s
+            """, (module_id, user_id))
+
+            module = cursor.fetchone()
+            if not module:
+                return jsonify({"success": False , "message": "Module not found."}), 400
+            
+            cursor.execute("""
+                    DELETE FROM module WHERE id = %s
+                """, module)
+            conn.commit()
+            return jsonify({"success": True, "message": "Module has been deleted successfully."}), 200
+    except Exception as e:
+        if conn:
+            conn.rollback()
+        return jsonify({"success": False, "message": "Failed deleting module."}), 500
+    finally:
+        conn.close()

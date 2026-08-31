@@ -4,9 +4,11 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 from slugify import slugify
 from db import get_connection
 from .module_utils import get_course_with_access_check
+from decorators import instructor_required
 
 @course_bp.route("/create", methods=["POST"])
 @jwt_required()
+@instructor_required
 def create_course():
     user_id = get_jwt_identity()
     data = request.get_json()
@@ -39,9 +41,6 @@ def create_course():
 
         if not user:
             return jsonify({"success": False, "message": "User not found!"}), 404
-
-        if user["role"] != "INSTRUCTOR":
-            return jsonify({"success": False, "message": "Only Instructor can create a course!"}), 403
         
         slug = slugify(title)
 
@@ -116,12 +115,6 @@ def get_course(course_id):
     
         if not course:
             return jsonify({"success": False, "message": "Course not found."}), 404
-            
-        if not is_instructor:
-            return jsonify({
-                "success": False, 
-                "message": "Only the course instructor can create modules!"
-            }), 403
 
         # Check if course is published (or user is instructor)
         if course["status"] != "PUBLISHED" and course["instructor_id"] != user_id:
