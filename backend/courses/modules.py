@@ -249,7 +249,7 @@ def update_module(module_id):
     description = data.get("description")
     position = data.get("position")
 
-    if not or not title.strip():
+    if not title or not title.strip():
             return jsonify({"success": False, "message":  "Module title must not be empty."})
         
     if not description.strip():
