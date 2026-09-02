@@ -51,6 +51,7 @@ CREATE TABLE course (
 CREATE TABLE module (
 	id INT PRIMARY KEY AUTO_INCREMENT,
     course_id INT NOT NULL,
+    title VARCHAR(200) NOT NULL,
     description TEXT NULL,
     module_position INT UNSIGNED NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
