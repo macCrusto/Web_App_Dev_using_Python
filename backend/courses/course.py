@@ -4,7 +4,7 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 from slugify import slugify
 from db import get_connection
 from .module_utils import get_course_with_access_check
-from decorators import instructor_required
+from utils.decorators import instructor_required
 
 @course_bp.route("/create", methods=["POST"])
 @jwt_required()

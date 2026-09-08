@@ -2,7 +2,7 @@ from . import course_bp
 from flask import request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from db import get_connection
-from decorators import instructor_required
+from utils.decorators import instructor_required
 
 @course_bp.route("course/<int:module_id>/lesson", methods=["POST"])
 @jwt_required()
