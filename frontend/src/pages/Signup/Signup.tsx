@@ -31,17 +31,17 @@ export default function SignupPage() {
       }}
     >
       {/* Background dark overlay for mobile to enhance negative space contrast */}
-      <div className="absolute inset-0 bg-[#02040F]/40 lg:hidden pointer-events-none" />
+      <div className="absolute inset-0 bg-[#02040F]/40 pointer-events-none" />
 
       {/* Entire Right Half Screen Assignment: Top logo, Middle form, Bottom detail */}
       {/* lg:ml-auto pushes this container to the right half of the screen */}
       {/* Reduced padding to p-2 lg:p-4 to save vertical space */}
-      <div className="relative z-10 w-full lg:w-1/2 h-screen flex flex-col items-center justify-between p-2 lg:p-4 lg:ml-auto">
+      <div className="relative z-10 w-full lg:w-1/2 min-h-screen flex flex-col items-center justify-between p-2 lg:p-4 lg:ml-auto">
         
         {/* Top: Brand Logo and Name */}
-        <div className="w-full flex justify-center gap-2 font-bold text-white pt-1">
-          <img src={logo} className="size-5 drop-shadow-md" alt="Axli logo" />
-          <span className="tracking-tight font-extrabold text-base">Axli</span>
+        <div className="w-full flex justify-center gap-2 font-bold text-white">
+          <img src={logo} className="size-6 drop-shadow-md" alt="Axli logo" />
+          <span className="tracking-tight font-extrabold text-lg">Axli</span>
         </div>
 
         {/* Middle: Centered Form with Transparent Background */}

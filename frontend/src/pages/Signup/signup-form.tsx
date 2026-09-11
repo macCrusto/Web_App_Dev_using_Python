@@ -31,7 +31,6 @@ export function SignupForm({
   onSubmit,
   isLoading,
   onGoogleLogin,
-  error,
   ...props
 }: SignupFormProps) {
   const navigate = useNavigate();
@@ -69,13 +68,6 @@ export function SignupForm({
             Signup
           </Button>
         </div>
-
-        {/* Error alert if any */}
-        {error && (
-          <div className="p-1 mb-1.5 rounded-md bg-rose-500/15 border border-rose-500/30 text-rose-300 text-[10px] font-medium">
-            {error}
-          </div>
-        )}
 
         {/* Form Fields - Tightened spacing */}
         <form onSubmit={onSubmit}>
