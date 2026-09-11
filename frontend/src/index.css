@@ -61,37 +61,37 @@
 }
 
 .dark {
-  --background: oklch(0.1797 0.0043 308.1928);
-  --foreground: oklch(0.8109 0 0);
-  --card: oklch(0.1797 0.0043 308.1928);
-  --card-foreground: oklch(0.9219 0 0);
-  --popover: oklch(0.2900 0.0249 268.3986);
-  --popover-foreground: oklch(0.9219 0 0);
+  --background: oklch(0.13 0.005 260);
+  --foreground: oklch(0.92 0 0);
+  --card: oklch(0.18 0.005 260);
+  --card-foreground: oklch(0.95 0 0);
+  --popover: oklch(0.18 0.005 260);
+  --popover-foreground: oklch(0.95 0 0);
   --primary: oklch(0.6397 0.1720 36.4421);
   --primary-foreground: oklch(1.0000 0 0);
-  --secondary: oklch(0.6397 0.1720 36.4421);
-  --secondary-foreground: oklch(0.9219 0 0);
-  --muted: oklch(0.3095 0.0266 266.7132);
-  --muted-foreground: oklch(0.7155 0 0);
-  --accent: oklch(0.3380 0.0589 267.5867);
-  --accent-foreground: oklch(0.8823 0.0571 254.1284);
+  --secondary: oklch(0.22 0.005 260);
+  --secondary-foreground: oklch(0.92 0 0);
+  --muted: oklch(0.22 0.005 260);
+  --muted-foreground: oklch(0.65 0 0);
+  --accent: oklch(0.24 0.005 260);
+  --accent-foreground: oklch(0.95 0 0);
   --destructive: oklch(0.6368 0.2078 25.3313);
   --destructive-foreground: oklch(1.0000 0 0);
-  --border: oklch(0.3843 0.0301 269.7337);
-  --input: oklch(0.3843 0.0301 269.7337);
+  --border: oklch(0.25 0.005 260);
+  --input: oklch(0.25 0.005 260);
   --ring: oklch(0.6397 0.1720 36.4421);
   --chart-1: oklch(0.7156 0.0605 248.6845);
   --chart-2: oklch(0.7693 0.0876 34.1875);
   --chart-3: oklch(0.5778 0.0759 254.1573);
   --chart-4: oklch(0.5016 0.0849 259.4902);
   --chart-5: oklch(0.4241 0.0952 264.0306);
-  --sidebar: oklch(0.1797 0.0043 308.1928);
-  --sidebar-foreground: oklch(0.8109 0 0);
+  --sidebar: oklch(0.13 0.005 260);
+  --sidebar-foreground: oklch(0.85 0 0);
   --sidebar-primary: oklch(0.6397 0.1720 36.4421);
   --sidebar-primary-foreground: oklch(1.0000 0 0);
-  --sidebar-accent: oklch(0.3380 0.0589 267.5867);
-  --sidebar-accent-foreground: oklch(0.8823 0.0571 254.1284);
-  --sidebar-border: oklch(0.3843 0.0301 269.7337);
+  --sidebar-accent: oklch(0.22 0.005 260);
+  --sidebar-accent-foreground: oklch(0.95 0 0);
+  --sidebar-border: oklch(0.25 0.005 260);
   --sidebar-ring: oklch(0.6397 0.1720 36.4421);
   --font-sans: Inter, sans-serif;
   --font-serif: Source Serif 4, serif;
@@ -173,4 +173,46 @@
   body {
     @apply bg-background text-foreground;
   }
+
+  /* Sleek, minimal non-intrusive scrollbars */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: hsl(0 0% 50% / 0.15);
+    border-radius: 9999px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: hsl(0 0% 50% / 0.35);
+  }
+}
+
+@utility no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* Override browser autofill background for dark inputs */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 30px #1c1917 inset !important; /* matches bg-stone-900 */
+  -webkit-text-fill-color: #f5f5f4 !important;            /* matches text-stone-100 */
+  caret-color: #f5f5f4;
+  transition: background-color 5000s ease-in-out 0s;
+}
+
+/* For Firefox */
+input:autofill {
+  filter: none;
+  background-color: #1c1917 !important;
+  color: #f5f5f4 !important;
 }
