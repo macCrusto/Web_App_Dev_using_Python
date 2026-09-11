@@ -1,6 +1,6 @@
 import { ResetPasswordForm } from "./reset-password-form"
 import { useResetPassword } from "./useResetPassword"
-import logo from '@/src/assets/logo.svg'
+import logo from '@/src/assets/logo.png'
 
 export default function ResetPasswordPage() {
   const { handleSubmit, error, isLoading } = useResetPassword()

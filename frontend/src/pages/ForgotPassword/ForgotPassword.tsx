@@ -1,6 +1,6 @@
 import { ForgotPasswordForm } from "./forgot-password-form"
 import { useForgotPassword } from "./useForgotPassword"
-import logo from '@/src/assets/logo.svg'
+import logo from '@/src/assets/logo.png'
 
 export default function ForgotPasswordPage() {
   const { handleSubmit, error, isLoading } = useForgotPassword()
