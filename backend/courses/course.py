@@ -95,6 +95,46 @@ def create_course():
         if conn:
             conn.close()
 
+@course_bp.route("", methods=["GET"])
+@course_bp.route("/catalog", methods=["GET"])
+def get_published_courses():
+    conn = None
+    cursor = None
+    try:
+        conn = get_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute("""
+            SELECT c.id, c.title, c.slug, c.description, c.thumbnail_url, c.price, c.currency, c.status, c.free_count, c.created_at,
+                   u.fullname as instructor_name, u.email as instructor_email, u.avatar as instructor_avatar,
+                   (SELECT COUNT(*) FROM module m WHERE m.course_id = c.id) as modules_count,
+                   (SELECT COUNT(*) FROM lessons l JOIN module m ON l.module_id = m.id WHERE m.course_id = c.id) as lessons_count,
+                   (SELECT COUNT(*) FROM enrollment e WHERE e.course_id = c.id) as students_count
+            FROM course c
+            LEFT JOIN Users u ON c.instructor_id = u.id
+            WHERE c.status = 'PUBLISHED'
+            ORDER BY c.created_at DESC
+        """)
+        
+        courses = cursor.fetchall()
+        return jsonify({
+            "success": True,
+            "courses": courses or []
+        }), 200
+
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "message": "Failed to retrieve courses.",
+            "error": str(e)
+        }), 500
+
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
+
 @course_bp.route("/<int:course_id>", methods=["GET"])
 @jwt_required()
 def get_course(course_id):
@@ -125,7 +165,7 @@ def get_course(course_id):
 
         return jsonify({
             "success": True,
-            "message": f"Course found: {course["title"]}",
+            "message": f"Course found: {course['title']}",
             "course": course
             }), 200
 
@@ -135,3 +175,4 @@ def get_course(course_id):
     finally:
         if conn:
             conn.close()
+
