@@ -139,6 +139,35 @@ def list_published_courses():
         if conn:
             conn.close()
 
+@course_bp.route("/enrolled", methods=["GET"])
+@jwt_required()
+@student_required
+def get_student_courses():
+    user_id = get_jwt_identity()
+
+    conn = None
+    try:
+        conn = get_connection()
+        with conn.cursor() as cursor:
+            # Example query to retrieve student courses
+            cursor.execute("""SELECT c.id, c.title, c.description, c.slug, 
+                           c.thumbnail_url, c.price, c.currency, c.published
+                           FROM courses c
+                           JOIN users u ON c.instructor_id = u.id
+                           WHERE c.status = 'PUBLISHED'
+                           ORDER BY c.published_at DESC""")
+            courses = cursor.fetchall()
+
+
+            return jsonify({"success": True, "courses": courses}), 200
+    except Exception as e:
+        if conn:
+            conn.rollback()
+        return jsonify({"success": False, "message": "Failed to retrieve courses", "error": str(e)}), 500
+
+    
+    return jsonify({"success": False, "message": "No courses found for this student"}), 404
+
 @course_bp.route("/<int:course_id>", methods=["GET"])
 @jwt_required()
 def get_course(course_id):
@@ -151,31 +180,111 @@ def get_course(course_id):
         conn = get_connection()
         cursor = conn.cursor()
 
-        # Check if course exists and belongs to the instructor using helper function
         course, is_instructor, is_enrolled, has_full_access = get_course_with_access_check(
             cursor, course_id, user_id
         )
 
         if not course:
-            return jsonify({"success": False, "message": "Course not found."}), 404
-
-        # Check if course is published (or user is instructor)
-        if course["status"] != "PUBLISHED" and course["instructor_id"] != user_id:
             return jsonify({
-                "success": False, 
-                "message": "This course is not available!"
-            }), 403
+                "success": False,
+                "message": "Course not found."
+            }), 404
+
+        if isinstance(has_full_access, dict):
+            return jsonify(has_full_access), 403
+
+        cursor.execute("""
+            SELECT
+                c.id,
+                c.title,
+                c.slug,
+                c.description,
+                c.thumbnail_url,
+                c.price,
+                c.currency,
+                c.status,
+                c.free_count,
+                c.created_at,
+                u.id AS instructor_id,
+                u.fullname AS instructor_name,
+                u.email AS instructor_email,
+                u.avatar AS instructor_avatar,
+                (SELECT COUNT(*) FROM module m WHERE m.course_id = c.id) AS modules_count,
+                (SELECT COUNT(*) FROM lessons l
+                    JOIN module m ON l.module_id = m.id
+                    WHERE m.course_id = c.id) AS lessons_count,
+                (SELECT COUNT(*) FROM enrollment e WHERE e.course_id = c.id) AS students_count
+            FROM course c
+            LEFT JOIN Users u ON c.instructor_id = u.id
+            WHERE c.id = %s
+        """, (course_id,))
+
+        course_data = cursor.fetchone()
+
+        if not course_data:
+            return jsonify({
+                "success": False,
+                "message": "Course not found."
+            }), 404
+
+        cursor.execute("""
+            SELECT access_type, status, enrolled_at, expires_at
+            FROM enrollment
+            WHERE course_id = %s AND user_id = %s
+        """, (course_id, user_id))
+
+        enrollment = cursor.fetchone()
+
+        cursor.execute("""
+            SELECT
+                id,
+                description,
+                module_position AS position,
+                created_at,
+                updated_at
+            FROM module
+            WHERE course_id = %s
+            ORDER BY module_position ASC
+        """, (course_id,))
+
+        modules = cursor.fetchall()
+
+        modules_data = []
+
+        for module in modules:
+            lessons = get_lessons_with_access_control(
+                cursor,
+                module["id"],
+                is_instructor,
+                is_enrolled
+            )
+
+            modules_data.append(
+                build_module_response(module, lessons, has_full_access)
+            )
 
         return jsonify({
             "success": True,
-            "message": f"Course found: {course['title']}",
-            "course": course
-            }), 200
+            "message": f"Course found: {course_data['title']}",
+            "course": course_data,
+            "enrollment": enrollment,
+            "modules": modules_data,
+            "user_access": {
+                "is_instructor": is_instructor,
+                "is_enrolled": is_enrolled,
+                "has_full_access": has_full_access
+            }
+        }), 200
 
     except Exception as e:
-        return jsonify({"success": False, "message": "Cannot establish a connection at the moment."}), 500
+        return jsonify({
+            "success": False,
+            "message": "Cannot retrieve course at the moment.",
+            "error": str(e)
+        }), 500
 
     finally:
+        if cursor:
+            cursor.close()
         if conn:
             conn.close()
-
