@@ -28,10 +28,24 @@ const pathTitles: Record<string, { title: string; category: string }> = {
 
 export function DashboardLayout() {
   const location = useLocation()
-  const currentInfo = pathTitles[location.pathname] || {
-    title: "Platform Console",
-    category: "App",
+
+  const getBreadcrumbInfo = (pathname: string) => {
+    if (pathTitles[pathname]) {
+      return pathTitles[pathname]
+    }
+    if (pathname.includes("/curriculum")) {
+      return { title: "Curriculum Builder Studio", category: "Teaching" }
+    }
+    if (pathname.includes("/lessons/")) {
+      return { title: "Interactive Lesson Player", category: "Learning" }
+    }
+    if (pathname.startsWith("/courses/")) {
+      return { title: "Course Syllabus & Overview", category: "Explore" }
+    }
+    return { title: "Platform Console", category: "App" }
   }
+
+  const currentInfo = getBreadcrumbInfo(location.pathname)
 
   return (
     <SidebarProvider defaultOpen={true}>
