@@ -31,7 +31,8 @@ def login():
                    email,
                    password,
                    role,
-                   is_verified
+                   is_verified,
+                   avatar
             FROM Users
             WHERE email=%s
         """, (email,))
@@ -72,7 +73,8 @@ def login():
                 "id": user["id"],
                 "fullname": user["fullname"],
                 "email": user["email"],
-                "role": user["role"]
+                "role": user["role"],
+                "avatar": user.get("avatar")
             }
         }), 200
 
