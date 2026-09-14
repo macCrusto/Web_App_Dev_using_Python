@@ -49,7 +49,3 @@ def validate_file(file, content_type):
         return False, error
 
     return True, None
-
-    valid, error = validate_mimetype(file, content_type)
-    if not valid:
-        return False, error
