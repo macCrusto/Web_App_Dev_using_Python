@@ -2,9 +2,12 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { loginUser } from "./loginUser";
 import { toast } from "sonner";
+import { useAuth } from "@/src/context/AuthContext";
+import type { User } from "@/src/types";
 
 export function useLogin() {
   const navigate = useNavigate();
+  const { login } = useAuth();
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -21,9 +24,11 @@ export function useLogin() {
       const response = await loginUser({ email, password });
       const data = await response.json();
       
-      if (data.access_token) {
-        localStorage.setItem("access_token", data.access_token);
+      if (!data.access_token || !data.user) {
+        throw new Error(data.message || "Login response was incomplete.");
       }
+
+      login(data.access_token, data.user as User);
 
       toast.success("Login successful!");
       navigate("/dashboard");
