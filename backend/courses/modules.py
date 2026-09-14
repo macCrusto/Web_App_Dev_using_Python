@@ -160,13 +160,10 @@ def get_course_modules(course_id):
         if conn:
             conn.close()
 
-@course_bp.route("/<int:course_id>/modules/<int:module_id>", methods=["GET"])
+@course_bp.route("/modules/<int:module_id>", methods=["GET"])
 @jwt_required()
-def get_course_module(course_id, module_id):
+def get_course_module(module_id):
     user_id = get_jwt_identity()
-
-    if not user_id:
-        return jsonify({"success": False, "message": "User not authenticated!"}), 401
 
     conn = None
     cursor = None
@@ -175,34 +172,66 @@ def get_course_module(course_id, module_id):
         conn = get_connection()
         cursor = conn.cursor()
 
-        # Get course with access check
+        cursor.execute("""
+            SELECT course_id
+            FROM module
+            WHERE id = %s
+        """, (module_id,))
+
+        module_row = cursor.fetchone()
+
+        if not module_row:
+            return jsonify({
+                "success": False,
+                "message": "Module not found."
+            }), 404
+
+        course_id = module_row["course_id"]
+
         course, is_instructor, is_enrolled, has_full_access = get_course_with_access_check(
             cursor, course_id, user_id
         )
-        
+
         if not course:
-            return jsonify({"success": False, "message": "Course not found!"}), 404
-            
+            return jsonify({
+                "success": False,
+                "message": "Course not found."
+            }), 404
+
         if isinstance(has_full_access, dict):
             return jsonify(has_full_access), 403
 
-        # Get the specific module
         cursor.execute("""
-            SELECT id, description, module_position as position, created_at, updated_at
-            FROM module 
-            WHERE id = %s AND course_id = %s
-        """, (module_id, course_id))
-        
-        module = cursor.fetchone()
-        
-        if not module:
-            return jsonify({"success": False, "message": "Module not found in this course!"}), 404
+            SELECT
+                id,
+                description,
+                module_position AS position,
+                created_at,
+                updated_at
+            FROM module
+            WHERE id = %s
+        """, (module_id,))
 
-        # Get lessons with access control
+        module = cursor.fetchone()
+
+        if not module:
+            return jsonify({
+                "success": False,
+                "message": "Module not found."
+            }), 404
+
         lessons = get_lessons_with_access_control(
-            cursor, module_id, is_instructor, is_enrolled
+            cursor,
+            module_id,
+            is_instructor,
+            is_enrolled
         )
-        module_data = build_module_response(module, lessons, has_full_access)
+
+        module_data = build_module_response(
+            module,
+            lessons,
+            has_full_access
+        )
 
         return jsonify({
             "success": True,
@@ -223,8 +252,8 @@ def get_course_module(course_id, module_id):
 
     except Exception as e:
         return jsonify({
-            "success": False, 
-            "message": "Failed to retrieve module.", 
+            "success": False,
+            "message": "Failed to retrieve module.",
             "error": str(e)
         }), 500
 
@@ -305,7 +334,7 @@ def update_module(module_id):
             conn.close()
 
 
-@course_bp.route("course/module/<int:module_id>", methods=["DELETE"])
+@course_bp.route("/modules/<int:module_id>", methods=["DELETE"])
 @jwt_required()
 @instructor_required
 def delete_module(module_id):
