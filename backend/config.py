@@ -18,6 +18,11 @@ class Config:
     MYSQL_PASSWORD = os.getenv("MYSQL_PASSWORD")
     MYSQL_DATABASE = os.getenv("MYSQL_DATABASE")
     # SSL = {"ca", os.getenv("DB_SSL_CERT")}
+
+    CLOUDINARY_URL = os.getenv("CLOUDINARY_URL")
+    CLOUDINARY_CLOUD_NAME = os.getenv("CLOUDINARY_CLOUD_NAME")
+    CLOUDINARY_API_KEY = os.getenv("CLOUDINARY_API_KEY")
+    CLOUDINARY_API_SECRET = os.getenv("CLOUDINARY_API_SECRET")
   
     BREVO_API_KEY = os.getenv("BREVO_API_KEY")
     MAIL_FROM_TITLE = os.getenv("MAIL_FROM_TITLE")
