@@ -3,10 +3,14 @@ from flask import request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from slugify import slugify
 from db import get_connection
-from .module_utils import get_course_with_access_check
-from utils.decorators import instructor_required
+from .module_utils import (
+    get_course_with_access_check,
+    get_lessons_with_access_control,
+    build_module_response,
+)
+from utils.decorators import instructor_required, student_required
 
-@course_bp.route("/create", methods=["POST"])
+@course_bp.route("", methods=["POST"])
 @jwt_required()
 @instructor_required
 def create_course():
@@ -97,7 +101,7 @@ def create_course():
 
 @course_bp.route("", methods=["GET"])
 @course_bp.route("/catalog", methods=["GET"])
-def get_published_courses():
+def list_published_courses():
     conn = None
     cursor = None
     try:
@@ -140,10 +144,9 @@ def get_published_courses():
 def get_course(course_id):
     user_id = get_jwt_identity()
 
-    if not user_id:
-        return jsonify({"success": False, "message":""}), 404
-
     conn = None
+    cursor = None
+
     try:
         conn = get_connection()
         cursor = conn.cursor()
@@ -152,7 +155,7 @@ def get_course(course_id):
         course, is_instructor, is_enrolled, has_full_access = get_course_with_access_check(
             cursor, course_id, user_id
         )
-    
+
         if not course:
             return jsonify({"success": False, "message": "Course not found."}), 404
 
