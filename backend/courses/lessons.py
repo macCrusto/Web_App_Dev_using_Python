@@ -4,7 +4,7 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 from db import get_connection
 from utils.decorators import instructor_required
 
-@course_bp.route("course/<int:module_id>/lesson", methods=["POST"])
+@course_bp.route("modules/<int:module_id>/lesson", methods=["POST"])
 @jwt_required()
 @instructor_required
 def create_lesson(module_id):
@@ -90,7 +90,7 @@ def create_lesson(module_id):
 @course_bp.route("/modules/<int:module_id>/lessons", methods=["GET"])
 @jwt_required()
 @instructor_required
-def get_module_lessons(module_id):
+def list_module_lessons(module_id):
 
     user_id = get_jwt_identity()
 
@@ -136,7 +136,7 @@ def get_module_lessons(module_id):
                     duration_seconds,
                     created_at,
                     updated_at
-                FROM lesson
+                FROM lessons
                 WHERE module_id = %s
                 ORDER BY position ASC
             """, (module_id,))
@@ -169,7 +169,7 @@ def get_module_lessons(module_id):
 @course_bp.route("/lessons/<int:lesson_id>", methods=["PUT"])
 @jwt_required()
 @instructor_required
-def update_module_lessons(lesson_id):
+def update_lesson(lesson_id):
     user_id = get_jwt_identity()
     data = request.get_json()
 
@@ -228,10 +228,90 @@ def update_module_lessons(lesson_id):
 
 
 
+@course_bp.route('/lessons/<int:lesson_id>', methods=['GET'])
+@jwt_required()
+def get_lesson_detail(lesson_id):
+    """
+    Return full lesson detail including attached resources.
+    GET /api/courses/lessons/<lesson_id>/detail
+    """
+    user_id = get_jwt_identity()
+    conn = None
+
+    try:
+        conn = get_connection()
+
+        with conn.cursor() as cursor:
+            # Fetch the lesson (check access — enrolled or instructor)
+            cursor.execute("""
+                SELECT
+                    l.id,
+                    l.module_id,
+                    l.title,
+                    l.description,
+                    l.content_type,
+                    l.content_url,
+                    l.content_body,
+                    l.is_free,
+                    l.lesson_position,
+                    l.is_published,
+                    l.duration_seconds,
+                    l.created_at,
+                    l.updated_at
+                FROM lessons l
+                WHERE l.id = %s
+            """, (lesson_id,))
+
+            lesson = cursor.fetchone()
+            if not lesson:
+                return jsonify({'success': False, 'message': 'Lesson not found.'}), 404
+
+            # Fetch resources for this lesson
+            # Falls back to empty list if the table doesn't exist yet
+            resources = []
+            try:
+                cursor.execute("""
+                    SELECT
+                        id,
+                        lesson_id,
+                        title,
+                        file_url,
+                        file_type,
+                        file_size_kb,
+                        description
+                    FROM lesson_resource
+                    WHERE lesson_id = %s
+                    ORDER BY id ASC
+                """, (lesson_id,))
+                resources = cursor.fetchall()
+            except Exception:
+                # lesson_resource table may not exist yet — return empty list
+                resources = []
+
+            lesson_data = dict(lesson)
+            lesson_data['resources'] = [dict(r) for r in resources]
+
+            return jsonify({
+                'success': True,
+                'lesson': lesson_data,
+            }), 200
+
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': 'Failed to retrieve lesson detail.',
+            'error': str(e)
+        }), 500
+
+    finally:
+        if conn:
+            conn.close()
+
+
 @course_bp.route("/lessons/<int:lesson_id>", methods=["DELETE"])
 @jwt_required()
 @instructor_required
-def delete_module_lessons(lesson_id):
+def delete_lesson(lesson_id):
     user_id = get_jwt_identity()
 
     conn = None
@@ -252,7 +332,7 @@ def delete_module_lessons(lesson_id):
                 return jsonify({"success": False, "message": "Lesson not found or you do not own this lesson."}), 404
 
             cursor.execute("""
-                DELETE FROM lesson WHERE id = %s
+                DELETE FROM lessons WHERE id = %s
             """, (lesson_id,))
 
             conn.commit()
@@ -264,3 +344,4 @@ def delete_module_lessons(lesson_id):
     finally:
         if conn:
             conn.close()
+
