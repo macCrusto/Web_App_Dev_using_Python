@@ -18,7 +18,6 @@ import CourseStudioPage from './CourseStudio/CourseStudioPage';
 import CreateCoursePage from './CourseStudio/CreateCoursePage';
 import CurriculumBuilderPage from './CourseStudio/CurriculumBuilderPage';
 
-import PaymentsPage from './Payments/PaymentsPage';
 import ProfilePage from './Profile/ProfilePage';
 import SettingsPage from './Settings/SettingsPage';
 import UnauthorizedPage from './UnauthorizedPage';
@@ -39,7 +38,6 @@ export {
   CourseStudioPage,
   CreateCoursePage,
   CurriculumBuilderPage,
-  PaymentsPage,
   ProfilePage,
   SettingsPage,
   UnauthorizedPage,
