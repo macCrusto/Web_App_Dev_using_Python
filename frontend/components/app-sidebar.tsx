@@ -362,6 +362,7 @@ export function AppSidebar() {
           <SidebarMenuItem>
             <DropdownMenu>
               <DropdownMenuTrigger
+                onClick={() => navigate("/profile")}
                 render={
                   <SidebarMenuButton
                     size="lg"
@@ -391,7 +392,7 @@ export function AppSidebar() {
                 }
               />
               <DropdownMenuContent
-                className="w-64 rounded-xl p-1.5 shadow-xl border border-border"
+                className="z-[100] w-64 rounded-xl p-1.5 shadow-xl border border-border"
                 side="right"
                 align="end"
                 sideOffset={8}
@@ -422,47 +423,30 @@ export function AppSidebar() {
 
                 <DropdownMenuSeparator />
 
-                {/* Quick Role Switcher Submenu */}
-                <div className="p-1.5 text-[11px] font-medium text-muted-foreground flex items-center gap-1">
-                  <Sparkles className="size-3 text-primary" /> Switch Role Perspective:
-                </div>
-                <div className="grid grid-cols-3 gap-1 px-1 pb-1">
-                  <button
-                    type="button"
-                    onClick={() => switchRole("USER")}
-                    className={`px-1.5 py-1 text-[10px] rounded-md font-semibold transition-all ${
-                      currentUser.role === "USER"
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-muted text-muted-foreground hover:text-foreground"
-                    }`}
-                  >
-                    Student
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => switchRole("INSTRUCTOR")}
-                    className={`px-1.5 py-1 text-[10px] rounded-md font-semibold transition-all ${
-                      currentUser.role === "INSTRUCTOR"
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-muted text-muted-foreground hover:text-foreground"
-                    }`}
-                  >
-                    Instructor
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => switchRole("ADMIN")}
-                    className={`px-1.5 py-1 text-[10px] rounded-md font-semibold transition-all ${
-                      currentUser.role === "ADMIN"
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-muted text-muted-foreground hover:text-foreground"
-                    }`}
-                  >
-                    Admin
-                  </button>
-                </div>
-
-                <DropdownMenuSeparator />
+                {role === "ADMIN" && (
+                  <>
+                    <div className="p-1.5 text-[11px] font-medium text-muted-foreground flex items-center gap-1">
+                      <Sparkles className="size-3 text-primary" /> Development role perspective:
+                    </div>
+                    <div className="grid grid-cols-3 gap-1 px-1 pb-1">
+                      {(["USER", "INSTRUCTOR", "ADMIN"] as UserRole[]).map((nextRole) => (
+                        <button
+                          key={nextRole}
+                          type="button"
+                          onClick={() => switchRole(nextRole)}
+                          className={`px-1.5 py-1 text-[10px] rounded-md font-semibold transition-all ${
+                            currentUser.role === nextRole
+                              ? "bg-primary text-primary-foreground"
+                              : "bg-muted text-muted-foreground hover:text-foreground"
+                          }`}
+                        >
+                          {nextRole === "USER" ? "Student" : nextRole === "INSTRUCTOR" ? "Instructor" : "Admin"}
+                        </button>
+                      ))}
+                    </div>
+                    <DropdownMenuSeparator />
+                  </>
+                )}
 
                 <DropdownMenuGroup>
                   <DropdownMenuItem
