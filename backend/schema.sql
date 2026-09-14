@@ -84,7 +84,25 @@ CREATE TABLE lessons (
     CONSTRAINT fk_lesson_module
     FOREIGN KEY (module_id) REFERENCES module(id)
 );
-    
+
+CREATE TABLE lesson_resource (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    lesson_id INT NOT NULL,
+    title VARCHAR(255) NOT NULL,
+    file_url TEXT NOT NULL,
+    file_type VARCHAR(100) NULL,
+    file_size_kb INT UNSIGNED NULL,
+    description TEXT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+    INDEX idx_lesson_resource_lesson (lesson_id),
+
+    CONSTRAINT fk_lesson_resource_lesson
+        FOREIGN KEY (lesson_id) REFERENCES lessons(id)
+        ON DELETE CASCADE
+);
+
 CREATE TABLE enrollment (
 	id INT PRIMARY KEY AUTO_INCREMENT,
     user_id BIGINT NOT NULL,
