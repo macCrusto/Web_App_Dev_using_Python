@@ -34,7 +34,7 @@ def create_module(course_id):
             cursor, course_id, user_id
         )
         
-        if not course:
+        if not course or not is_instructor:
             return jsonify({"success": False, "message": "Course not found!"}), 404
         
         # Check if position is already taken
@@ -50,16 +50,16 @@ def create_module(course_id):
             }), 400
 
         cursor.execute("""
-            INSERT INTO module (course_id, description, module_position) 
-            VALUES (%s, %s, %s)
-        """, (course_id, description, position))
+            INSERT INTO module (course_id, title, description, module_position)
+            VALUES (%s, %s, %s, %s)
+        """, (course_id, title.strip(), description, position))
         
         module_id = cursor.lastrowid
         conn.commit()
         
         # Get the created module to return consistent response
         cursor.execute("""
-            SELECT id, description, module_position as position, created_at, updated_at
+            SELECT id, course_id, title, description, module_position as position, created_at, updated_at
             FROM module 
             WHERE id = %s
         """, (module_id,))

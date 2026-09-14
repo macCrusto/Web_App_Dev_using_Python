@@ -4,7 +4,7 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 from db import get_connection
 from utils.decorators import instructor_required
 
-@course_bp.route("modules/<int:module_id>/lesson", methods=["POST"])
+@course_bp.route("/modules/<int:module_id>/lesson", methods=["POST"])
 @jwt_required()
 @instructor_required
 def create_lesson(module_id):
@@ -46,8 +46,8 @@ def create_lesson(module_id):
                 return jsonify({"success": False, "message":"Module not found. you do not own any module."})
             
             cursor.execute("""
-                        SELECT COALESCE(Max(lesson_position), 0) + 1 as next_position FROM module 
-                           WHERE id = %s
+                           SELECT COALESCE(MAX(lesson_position), 0) + 1 as next_position FROM lessons
+                           WHERE module_id = %s
                            """, module_id)
             
             result = cursor.fetchone()
@@ -55,10 +55,10 @@ def create_lesson(module_id):
             next_position = result["next_position"]
 
             cursor.execute("""
-                            INSERT INTO lesson (title, content_type, content_url, content_body, 
+                            INSERT INTO lessons (module_id, title, content_type, content_url, content_body,
                            is_free, lesson_position, is_published)
-                           VALUES (%s, %s, %s, %s, %s, %s, %s)
-                            """, (title, content_type, content_url, content_body, True, next_position, False))
+                           VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                            """, (module_id, title, content_type, content_url, content_body, is_free, next_position, False))
             lesson_id = cursor.lastrowid
 
             conn.commit()
@@ -138,7 +138,7 @@ def list_module_lessons(module_id):
                     updated_at
                 FROM lessons
                 WHERE module_id = %s
-                ORDER BY position ASC
+                ORDER BY lesson_position ASC
             """, (module_id,))
 
             lessons = cursor.fetchall()
@@ -181,12 +181,13 @@ def update_lesson(lesson_id):
         conn = get_connection()
         with conn.cursor() as cursor:
             cursor.execute("""
-                SELECT I.id, I.title, I.description,
-                    I.content_type, I.content_url, I.content_body,
-                    I.is_free, I.module_position, C.id FROM module I
-                INNER JOIN module M ON I.id = M.id
-                INNER JOIN course C ON I.course_id = C.id
-                WHERE I.id = %s AND C.instructor_id = %s
+                SELECT l.id, l.title, l.description,
+                    l.content_type, l.content_url, l.content_body,
+                    l.is_free, l.is_published, l.duration_seconds
+                FROM lessons l
+                INNER JOIN module m ON l.module_id = m.id
+                INNER JOIN course c ON m.course_id = c.id
+                WHERE l.id = %s AND c.instructor_id = %s
             """, (lesson_id, user_id))
 
             lesson = cursor.fetchone()
@@ -212,9 +213,12 @@ def update_lesson(lesson_id):
                 return jsonify({"success": False, "message": "is_free must be a boolean value."}), 400
             
             cursor.execute("""
-                UPDATE lesson SET title = %s, description = %s, content_type = %s, content_url = %s, content_body = %s, is_free = %s
+                UPDATE lessons SET title = %s, description = %s, content_type = %s, content_url = %s, content_body = %s, is_free = %s,
+                    is_published = %s, duration_seconds = %s, updated_at = CURRENT_TIMESTAMP
                 WHERE id = %s
-            """, (title, description, content_type, content_url, content_body, is_free, lesson_id))
+            """, (title, description, content_type, content_url, content_body, is_free,
+                   data.get("is_published", lesson["is_published"]),
+                   data.get("duration_seconds", lesson["duration_seconds"]), lesson_id))
 
             conn.commit()
             return jsonify({"success": True, "message": "Lesson updated successfully."}), 200

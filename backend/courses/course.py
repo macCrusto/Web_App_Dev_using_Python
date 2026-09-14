@@ -22,14 +22,19 @@ def create_course():
     currency = data.get('currency', 'NGN')
     free_count = data.get('free_count', 1)
     description = data.get('description')
-    thumbnail = data.get('thumbnail')
+    thumbnail = data.get('thumbnail') or data.get('thumbnail_url')
     status = data.get('status', 'DRAFT')
 
     if not title.strip():
         return jsonify({"success": False, "message": "Course title must be provided"}), 400
 
-    if price <= 0:
-        return jsonify({"success": False, "message": "Price must be greater than 0"}), 400
+    try:
+        price = float(price)
+    except (TypeError, ValueError):
+        return jsonify({"success": False, "message": "Price must be a valid number"}), 400
+
+    if price < 0:
+        return jsonify({"success": False, "message": "Price cannot be negative"}), 400
 
 
     conn = None
@@ -54,7 +59,7 @@ def create_course():
         cursor.execute("""
                         INSERT INTO course 
                         (instructor_id, title, slug, description, thumbnail_url, price, currency, status, free_count)
-                       VALUES (%s, %s, %s %s, %s, %s, %s, %s, %s)
+                       VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
                         """, (
                             user_id,
                             title.strip(),
@@ -150,12 +155,16 @@ def get_student_courses():
         conn = get_connection()
         with conn.cursor() as cursor:
             # Example query to retrieve student courses
-            cursor.execute("""SELECT c.id, c.title, c.description, c.slug, 
-                           c.thumbnail_url, c.price, c.currency, c.published
-                           FROM courses c
-                           JOIN users u ON c.instructor_id = u.id
-                           WHERE c.status = 'PUBLISHED'
-                           ORDER BY c.published_at DESC""")
+            cursor.execute("""
+                SELECT c.id, c.title, c.description, c.slug,
+                       c.thumbnail_url, c.price, c.currency, c.status,
+                       c.free_count, c.created_at, e.access_type,
+                       e.enrolled_at
+                FROM enrollment e
+                INNER JOIN course c ON c.id = e.course_id
+                WHERE e.user_id = %s AND e.status = 'ACTIVE'
+                ORDER BY e.enrolled_at DESC
+            """, (user_id,))
             courses = cursor.fetchall()
 
 
