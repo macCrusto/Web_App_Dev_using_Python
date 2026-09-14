@@ -7,7 +7,7 @@ CREATE TABLE Users (
     email VARCHAR(150) UNIQUE NOT NULL,
     phone_no VARCHAR(20),
     password VARCHAR(200) NOT NULL,
-    role ENUM('ADMIN', 'USER') DEFAULT 'USER',
+    role ENUM('ADMIN', 'USER', 'INSTRUCTOR') DEFAULT 'USER',
     is_verified BOOLEAN DEFAULT FALSE,
     verification_token VARCHAR(255),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
