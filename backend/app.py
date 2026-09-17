@@ -25,6 +25,8 @@ app.config["BREVO_API_KEY"] = Config.BREVO_API_KEY
 app.config["MAIL_FROM"] = Config.MAIL_FROM
 app.config["MAIL_FROM_TITLE"] = Config.MAIL_FROM_TITLE
 
+app.config["PAYSTACK_BASE_URL"] = Config.PAYSTACK_BASE_URL
+
 bcrypt.init_app(app)
 jwt.init_app(app)
 oauth.init_app(app)
