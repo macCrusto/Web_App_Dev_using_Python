@@ -297,3 +297,231 @@ def get_course(course_id):
             cursor.close()
         if conn:
             conn.close()
+
+
+@course_bp.route("/instructor", methods=["GET"])
+@jwt_required()
+@instructor_required
+def get_instructor_courses():
+    """
+    Retrieve all courses created by the authenticated instructor,
+    including both PUBLISHED and DRAFT courses with module & lesson counts.
+    """
+    user_id = get_jwt_identity()
+    conn = None
+    cursor = None
+    try:
+        conn = get_connection()
+        cursor = conn.cursor()
+
+        cursor.execute("""
+            SELECT 
+                c.id, c.title, c.slug, c.description, c.thumbnail_url, c.price, c.currency,
+                c.status, c.free_count, c.created_at, c.updated_at,
+                (SELECT COUNT(*) FROM module m WHERE m.course_id = c.id) as modules_count,
+                (SELECT COUNT(*) FROM lessons l JOIN module m ON l.module_id = m.id WHERE m.course_id = c.id) as lessons_count,
+                (SELECT COUNT(*) FROM enrollment e WHERE e.course_id = c.id AND e.status = 'ACTIVE') as students_count,
+                COALESCE((SELECT SUM(amount) FROM payments p WHERE p.course_id = c.id AND p.status = 'PAID'), 0) as revenue
+            FROM course c
+            WHERE c.instructor_id = %s
+            ORDER BY c.created_at DESC
+        """, (user_id,))
+
+        courses = cursor.fetchall() or []
+        for course in courses:
+            if course.get("price") is not None:
+                course["price"] = float(course["price"])
+            if course.get("revenue") is not None:
+                course["revenue"] = float(course["revenue"])
+            if course.get("created_at"):
+                course["created_at"] = course["created_at"].isoformat()
+            if course.get("updated_at"):
+                course["updated_at"] = course["updated_at"].isoformat()
+
+        return jsonify({
+            "success": True,
+            "courses": courses
+        }), 200
+
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "message": "Failed to retrieve instructor courses.",
+            "error": str(e)
+        }), 500
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
+
+
+@course_bp.route("/<int:course_id>", methods=["PUT"])
+@jwt_required()
+@instructor_required
+def update_course(course_id):
+    """
+    Update course details (title, description, price, currency, free_count, thumbnail_url, status).
+    Restricted to the course instructor or admin.
+    """
+    user_id = get_jwt_identity()
+    data = request.get_json() or {}
+
+    conn = None
+    cursor = None
+    try:
+        conn = get_connection()
+        cursor = conn.cursor()
+
+        cursor.execute("SELECT id, instructor_id, title, slug FROM course WHERE id = %s", (course_id,))
+        course = cursor.fetchone()
+        if not course:
+            return jsonify({"success": False, "message": "Course not found."}), 404
+
+        # Verify owner or admin
+        cursor.execute("SELECT role FROM Users WHERE id = %s", (user_id,))
+        user_rec = cursor.fetchone()
+        is_admin = user_rec and user_rec.get("role") == "ADMIN"
+        if str(course["instructor_id"]) != str(user_id) and not is_admin:
+            return jsonify({"success": False, "message": "You do not have permission to edit this course."}), 403
+
+        updates = []
+        params = []
+
+        if "title" in data and data["title"] is not None:
+            new_title = data["title"].strip()
+            if not new_title:
+                return jsonify({"success": False, "message": "Course title cannot be empty."}), 400
+            updates.append("title = %s")
+            params.append(new_title)
+            # Re-slugify if title changed
+            if new_title != course["title"]:
+                new_slug = slugify(new_title)
+                updates.append("slug = %s")
+                params.append(new_slug)
+
+        if "description" in data:
+            updates.append("description = %s")
+            params.append(data["description"])
+
+        if "price" in data and data["price"] is not None:
+            try:
+                price_val = float(data["price"])
+                if price_val < 0:
+                    return jsonify({"success": False, "message": "Price cannot be negative."}), 400
+                updates.append("price = %s")
+                params.append(price_val)
+            except (TypeError, ValueError):
+                return jsonify({"success": False, "message": "Invalid price format."}), 400
+
+        if "currency" in data and data["currency"]:
+            updates.append("currency = %s")
+            params.append(data["currency"])
+
+        if "free_count" in data and data["free_count"] is not None:
+            try:
+                fc = int(data["free_count"])
+                updates.append("free_count = %s")
+                params.append(max(0, fc))
+            except (TypeError, ValueError):
+                pass
+
+        if "thumbnail" in data or "thumbnail_url" in data:
+            thumb = data.get("thumbnail") or data.get("thumbnail_url")
+            updates.append("thumbnail_url = %s")
+            params.append(thumb)
+
+        if "status" in data and data["status"]:
+            status_val = data["status"].strip().upper()
+            if status_val not in ["DRAFT", "PUBLISHED", "ARCHIVED"]:
+                return jsonify({"success": False, "message": "Invalid status value."}), 400
+            updates.append("status = %s")
+            params.append(status_val)
+
+        if not updates:
+            return jsonify({"success": False, "message": "No fields to update."}), 400
+
+        updates.append("updated_at = CURRENT_TIMESTAMP")
+        params.append(course_id)
+
+        query = f"UPDATE course SET {', '.join(updates)} WHERE id = %s"
+        cursor.execute(query, tuple(params))
+        conn.commit()
+
+        cursor.execute("SELECT * FROM course WHERE id = %s", (course_id,))
+        updated = cursor.fetchone()
+
+        return jsonify({
+            "success": True,
+            "message": "Course updated successfully.",
+            "course": updated
+        }), 200
+
+    except Exception as e:
+        if conn:
+            conn.rollback()
+        return jsonify({
+            "success": False,
+            "message": "Failed to update course.",
+            "error": str(e)
+        }), 500
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
+
+
+@course_bp.route("/<int:course_id>", methods=["DELETE"])
+@jwt_required()
+@instructor_required
+def delete_course(course_id):
+    """
+    Delete a course and cascade delete its modules and lessons.
+    Restricted to the course instructor or admin.
+    """
+    user_id = get_jwt_identity()
+    conn = None
+    cursor = None
+    try:
+        conn = get_connection()
+        cursor = conn.cursor()
+
+        cursor.execute("SELECT id, instructor_id, title FROM course WHERE id = %s", (course_id,))
+        course = cursor.fetchone()
+        if not course:
+            return jsonify({"success": False, "message": "Course not found."}), 404
+
+        cursor.execute("SELECT role FROM Users WHERE id = %s", (user_id,))
+        user_rec = cursor.fetchone()
+        is_admin = user_rec and user_rec.get("role") == "ADMIN"
+        if str(course["instructor_id"]) != str(user_id) and not is_admin:
+            return jsonify({"success": False, "message": "You do not have permission to delete this course."}), 403
+
+        # Delete lessons, modules, and course
+        cursor.execute(
+            "DELETE FROM lessons WHERE module_id IN (SELECT id FROM module WHERE course_id = %s)",
+            (course_id,)
+        )
+        cursor.execute("DELETE FROM module WHERE course_id = %s", (course_id,))
+        cursor.execute("DELETE FROM course WHERE id = %s", (course_id,))
+        conn.commit()
+
+        return jsonify({
+            "success": True,
+            "message": f"Course '{course['title']}' has been deleted successfully."
+        }), 200
+
+    except Exception as e:
+        if conn:
+            conn.rollback()
+        return jsonify({
+            "success": False,
+            "message": "Failed to delete course.",
+            "error": str(e)
+        }), 500
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
