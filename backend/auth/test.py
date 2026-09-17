@@ -22,7 +22,7 @@ def current_user():
         with connection.cursor() as cursor:
             cursor.execute(
                 """
-                SELECT id, fullname, email, phone_no, role, is_verified, avatar
+                SELECT id, fullname, email, phone_no, role, is_verified, avatar, last_role_switch
                 FROM Users
                 WHERE id = %s
                 """,
@@ -32,6 +32,9 @@ def current_user():
 
         if not user_record:
             return jsonify({"success": False, "message": "User not found."}), 404
+
+        if user_record.get("last_role_switch"):
+            user_record["last_role_switch"] = user_record["last_role_switch"].isoformat()
 
         return jsonify({"success": True, "user": user_record}), 200
     finally:
