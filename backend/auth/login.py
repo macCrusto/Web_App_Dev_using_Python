@@ -32,7 +32,8 @@ def login():
                    password,
                    role,
                    is_verified,
-                   avatar
+                   avatar, 
+                   last_role_switch
             FROM Users
             WHERE email=%s
         """, (email,))
