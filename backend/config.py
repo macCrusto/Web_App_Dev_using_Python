@@ -28,5 +28,9 @@ class Config:
     MAIL_FROM_TITLE = os.getenv("MAIL_FROM_TITLE")
     MAIL_FROM = os.getenv("MAIL_FROM")
 
+    PAYSTACK_SECRET_KEY= os.getenv("PAYSTACK_SECRET_KEY")
+    PAYSTACK_PUBLIC_KEY = os.getenv("PAYSTACK_PUBLIC_KEY")
+    PAYSTACK_BASE_URL = os.getenv("PAYSTACK_BASE_URL", "https://api.paystack.co")
+
     SERVER_NAME = os.getenv("SERVER_NAME") or None
     PREFERRED_URL_SCHEME = os.getenv("PREFERRED_URL_SCHEME", "https" if os.getenv("FRONTEND_URL", "").startswith("https") else "http")
