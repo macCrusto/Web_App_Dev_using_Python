@@ -8,6 +8,7 @@ export interface User {
   phone_no?: string;
   is_verified?: boolean;
   avatar?: string;
+  last_role_switch?: string | null;
 }
 
 export type CourseStatus = 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
