@@ -12,7 +12,8 @@ CREATE TABLE Users (
     is_verified BOOLEAN DEFAULT FALSE,
     verification_token VARCHAR(255),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    last_password_change TIMESTAMP NULL
+    last_password_change TIMESTAMP NULL,
+    last_role_switch TIMESTAMP NULL DEFAULT NULL
 );
  
 --  INSERT INTO Users (fullname, email, password, role, is_verified)
