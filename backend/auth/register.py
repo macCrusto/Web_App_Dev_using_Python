@@ -1,7 +1,7 @@
 from flask import request, jsonify, current_app
 from . import auth_bp
 from email_validator import validate_email, EmailNotValidError
-from email_service import send_verification_email
+from services.email_service import send_verification_email
 from extension import bcrypt
 from db import get_connection
 from config import Config

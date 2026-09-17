@@ -2,7 +2,7 @@ from flask import request, jsonify
 from flask_jwt_extended import create_access_token, decode_token
 from datetime import timedelta
 from . import auth_bp
-from email_service import send_verification_email
+from services.email_service import send_verification_email
 from extension import bcrypt
 from db import get_connection
 from config import Config
