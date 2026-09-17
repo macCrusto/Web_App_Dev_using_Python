@@ -10,9 +10,9 @@ def instructor_required(fn):
 
         claims = get_jwt()
         role = claims.get("role")
-        if role != "INSTRUCTOR":
+        if role not in ("INSTRUCTOR", "ADMIN"):
             return jsonify({
-                "sucess": False,
+                "success": False,
                 "message": "Instructor access required."
             }), 403
         return fn(*args, **kwargs)

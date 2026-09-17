@@ -8,8 +8,10 @@ def get_course_with_access_check(cursor, course_id, user_id):
     if not course:
         return None, None, None, None
     
+    is_instructor = str(course.get("instructor_id")) == str(user_id)
+
     # Check if course is published (or user is instructor)
-    if course["status"] != "PUBLISHED" and course["instructor_id"] != user_id:
+    if course["status"] != "PUBLISHED" and not is_instructor:
         return course, None, None, {
             "success": False,
             "message": "This course is not available!"
@@ -23,7 +25,6 @@ def get_course_with_access_check(cursor, course_id, user_id):
     
     enrollment = cursor.fetchone()
     
-    is_instructor = course["instructor_id"] == user_id
     is_enrolled = enrollment is not None
     has_full_access = is_instructor or is_enrolled
     
