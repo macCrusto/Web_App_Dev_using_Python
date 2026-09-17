@@ -18,6 +18,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { useAuth } from "@/src/context/AuthContext"
 import { toast } from "sonner"
 import { AvatarUploadModal } from "@/src/components/profile/AvatarUploadModal"
+import { RoleSwitcherCard } from "@/src/components/profile/RoleSwitcherCard"
 
 export default function ProfilePage() {
   const { user, role, switchRole } = useAuth()
@@ -140,12 +141,15 @@ export default function ProfilePage() {
             </p>
           </Card>
 
+          {/* Role switcher with 12-hour cooldown */}
+          <RoleSwitcherCard />
+
           {/* Development perspective controls are restricted to administrators. */}
           {role === "ADMIN" && <Card className="rounded-3xl border border-stone-200/80 dark:border-stone-800 bg-white dark:bg-stone-900 p-5 space-y-3 shadow-xs">
             <div className="flex items-center gap-2">
               <Sparkles className="size-4 text-primary" />
               <h3 className="text-xs font-bold text-foreground uppercase tracking-wider">
-                Switch Platform Role
+                Admin Quick Role Switch
               </h3>
             </div>
             <div className="grid grid-cols-3 gap-1.5">
@@ -153,8 +157,8 @@ export default function ProfilePage() {
                 <button
                   key={r}
                   type="button"
-                  onClick={() => {
-                    switchRole(r)
+                  onClick={async () => {
+                    await switchRole(r)
                     toast.success(`Role switched to ${r}`)
                   }}
                   className={`py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
