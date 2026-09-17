@@ -323,12 +323,10 @@ def delete_lesson(lesson_id):
         conn = get_connection()
         with conn.cursor() as cursor:
             cursor.execute("""
-                SELECT I.id, I.title, I.description,
-                    I.content_type, I.content_url, I.content_body,
-                    I.is_free, I.module_position, C.id FROM module I
-                INNER JOIN module M ON I.id = M.id
-                INNER JOIN course C ON I.course_id = C.id
-                WHERE I.id = %s AND C.instructor_id = %s
+                SELECT l.id FROM lessons l
+                INNER JOIN module m ON l.module_id = m.id
+                INNER JOIN course c ON m.course_id = c.id
+                WHERE l.id = %s AND c.instructor_id = %s
             """, (lesson_id, user_id))
 
             lesson = cursor.fetchone()
