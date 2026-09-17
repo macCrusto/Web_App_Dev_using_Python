@@ -9,7 +9,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   login: (token: string, user: User) => void;
   logout: () => void;
-  switchRole: (newRole: UserRole) => void;
+  switchRole: (newRole: UserRole) => Promise<{ success: boolean; message: string; user?: User }>;
   updateUser: (data: Partial<User>) => void;
   hasRole: (allowedRoles: UserRole[]) => boolean;
   isLoading: boolean;
@@ -89,8 +89,109 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.removeItem('refresh_expiry');
   };
 
-  const switchRole = (newRole: UserRole) => {
-    setUser((prev) => (prev ? { ...prev, role: newRole } : null));
+  const switchRole = async (newRole: UserRole): Promise<{ success: boolean; message: string; user?: User }> => {
+    if (user?.role === 'ADMIN' && (newRole === 'ADMIN' || !user?.last_role_switch)) {
+      setUser((prev) => (prev ? { ...prev, role: newRole } : null));
+      return { success: true, message: `Switched perspective to ${newRole}` };
+    }
+
+    const currentToken = token || localStorage.getItem('access_token');
+    if (!currentToken) {
+      // Local development/mock fallback: enforce 12-hour cooldown
+      const COOLDOWN_MS = 12 * 60 * 60 * 1000;
+      if (user?.last_role_switch) {
+        const elapsed = Date.now() - new Date(user.last_role_switch).getTime();
+        if (elapsed < COOLDOWN_MS) {
+          const remMs = COOLDOWN_MS - elapsed;
+          const remHours = Math.floor(remMs / (3600 * 1000));
+          const remMins = Math.floor((remMs % (3600 * 1000)) / (60 * 1000));
+          return {
+            success: false,
+            message: `Role switch is on cooldown. You can switch again in ${remHours}h ${remMins}m.`,
+          };
+        }
+      }
+      const updatedUser: User = user
+        ? { ...user, role: newRole, last_role_switch: new Date().toISOString() }
+        : {
+            id: 1,
+            fullname: 'Alex Johnson',
+            email: 'alex.johnson@example.com',
+            role: newRole,
+            last_role_switch: new Date().toISOString(),
+          };
+      setUser(updatedUser);
+      localStorage.setItem('auth_user', JSON.stringify(updatedUser));
+      return { success: true, message: `Role switched to ${newRole}.`, user: updatedUser };
+    }
+
+    try {
+      const response = await fetch(`${CONFIG.API_URL}/api/auth/switch-role`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${currentToken}`,
+        },
+        credentials: 'include',
+        body: JSON.stringify({ role: newRole }),
+      });
+
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok || !data.success) {
+        return {
+          success: false,
+          message: data.message || `Failed to switch role (${response.status})`,
+        };
+      }
+
+      if (data.access_token) {
+        setToken(data.access_token);
+        localStorage.setItem('access_token', data.access_token);
+      }
+
+      if (data.user) {
+        setUser(data.user as User);
+        localStorage.setItem('auth_user', JSON.stringify(data.user));
+      }
+
+      return {
+        success: true,
+        message: data.message || `Role switched to ${newRole} successfully.`,
+        user: data.user,
+      };
+    } catch {
+      // Resilient fallback if backend server is offline in development
+      const COOLDOWN_MS = 12 * 60 * 60 * 1000;
+      if (user?.last_role_switch) {
+        const elapsed = Date.now() - new Date(user.last_role_switch).getTime();
+        if (elapsed < COOLDOWN_MS) {
+          const remMs = COOLDOWN_MS - elapsed;
+          const remHours = Math.floor(remMs / (3600 * 1000));
+          const remMins = Math.floor((remMs % (3600 * 1000)) / (60 * 1000));
+          return {
+            success: false,
+            message: `Role switch is on cooldown. You can switch again in ${remHours}h ${remMins}m.`,
+          };
+        }
+      }
+      const updatedUser: User = user
+        ? { ...user, role: newRole, last_role_switch: new Date().toISOString() }
+        : {
+            id: 1,
+            fullname: 'Alex Johnson',
+            email: 'alex.johnson@example.com',
+            role: newRole,
+            last_role_switch: new Date().toISOString(),
+          };
+      setUser(updatedUser);
+      localStorage.setItem('auth_user', JSON.stringify(updatedUser));
+      return {
+        success: true,
+        message: `Role switched to ${newRole}.`,
+        user: updatedUser,
+      };
+    }
   };
 
   const updateUser = (data: Partial<User>) => {
